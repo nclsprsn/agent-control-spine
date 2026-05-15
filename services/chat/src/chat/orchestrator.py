@@ -4,6 +4,8 @@ from collections.abc import AsyncIterator
 
 import httpx
 
+from chat.langfuse_integration import create_trace, get_langfuse
+
 
 class AgentOrchestrator:
     def __init__(self, registry_url: str, catalog_url: str) -> None:
@@ -26,6 +28,26 @@ class AgentOrchestrator:
         agent_info = await self.get_agent_info(agent_id)
         agent_name = agent_info["name"] if agent_info else "Unknown Agent"
 
+        trace = create_trace(
+            name="chat",
+            metadata={"agent_id": str(agent_id), "agent_name": agent_name},
+            tags=["chat", "stream"],
+        )
+
+        generation = None
+        if trace is not None:
+            generation = trace.generation(
+                name="llm-call",
+                model="placeholder",
+                input={"message": message, "history_len": len(history)},
+            )
+
+        response_text = (
+            f"[{agent_name}] Received your message: {message}\n\n"
+            "This is a placeholder response. Connect a real LLM provider "
+            "via AgentGateway to get actual agent responses."
+        )
+
         yield {
             "type": "text_delta",
             "content": f"[{agent_name}] Received your message: {message}\n\n",
@@ -34,6 +56,11 @@ class AgentOrchestrator:
             "type": "text_delta",
             "content": "This is a placeholder response. Connect a real LLM provider via AgentGateway to get actual agent responses.",
         }
+
+        if generation is not None:
+            generation.end(output={"response": response_text})
+        if trace is not None:
+            trace.update(output={"response": response_text})
 
         yield {
             "type": "done",

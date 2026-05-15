@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 
 from chat import routes
 from chat.config import ChatSettings
+from chat.langfuse_integration import init_langfuse, shutdown as langfuse_shutdown
 from chat.orchestrator import AgentOrchestrator
 from spine_common.database import create_engine, create_session_factory, get_session
 from spine_common.health import create_health_router
@@ -26,6 +27,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     routes.get_session = session_dependency  # type: ignore[assignment]
 
+    init_langfuse(settings)
+
     orchestrator = AgentOrchestrator(
         registry_url=settings.registry_url,
         catalog_url=settings.catalog_url,
@@ -35,6 +38,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.include_router(create_health_router("chat", engine=engine))
     yield
 
+    langfuse_shutdown()
     await orchestrator.close()
     await engine.dispose()
 

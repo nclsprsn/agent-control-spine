@@ -41,12 +41,14 @@ async def chat(
     user_id = get_user_id(request)
     orchestrator: AgentOrchestrator = request.app.state.orchestrator
 
+    agent_id = data.agent_id or uuid.UUID("00000000-0000-0000-0000-000000000000")
+
     if data.conversation_id:
         conv = await service.get(data.conversation_id)
         if conv is None:
             raise HTTPException(status_code=404, detail="Conversation not found")
     else:
-        conv = await service.create(user_id=user_id, agent_id=data.agent_id, title=data.message[:100])
+        conv = await service.create(user_id=user_id, agent_id=agent_id, title=data.message[:100])
 
     await service.add_message(conv.id, MessageRole.USER, data.message)
 
@@ -54,7 +56,7 @@ async def chat(
 
     async def event_generator():  # type: ignore[no-untyped-def]
         full_content = ""
-        async for event in orchestrator.stream_response(data.agent_id, data.message, history):
+        async for event in orchestrator.stream_response(agent_id, data.message, history):
             if event["type"] == "text_delta":
                 full_content += event["content"]
             yield {"event": event["type"], "data": json.dumps(event)}

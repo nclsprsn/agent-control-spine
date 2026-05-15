@@ -4,8 +4,8 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 interface StreamCallbacks {
   onTextDelta: (delta: string) => void;
-  onToolCallStart: (toolCall: { id: string; name: string; args?: Record<string, unknown> }) => void;
-  onToolCallResult: (result: { tool_call_id: string; result: string }) => void;
+  onToolCallStart: (toolCall: { call_id: string; name: string; args?: Record<string, unknown> }) => void;
+  onToolCallResult: (result: { call_id: string; result: string }) => void;
   onDone?: () => void;
   signal?: AbortSignal;
 }
@@ -54,7 +54,7 @@ function handleSSEEvent(event: string, data: string, callbacks: StreamCallbacks)
     const parsed = JSON.parse(data);
     switch (event) {
       case "text_delta":
-        callbacks.onTextDelta(parsed.delta);
+        callbacks.onTextDelta(parsed.content);
         break;
       case "tool_call_start":
         callbacks.onToolCallStart(parsed);

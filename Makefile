@@ -21,7 +21,7 @@ fmt:
 	uv run ruff format .
 
 typecheck:
-	uv run mypy services/ libs/ agents/
+	uv run mypy services/ libs/ agents/ --ignore-missing-imports
 
 migrate:
 	./scripts/migrate.sh

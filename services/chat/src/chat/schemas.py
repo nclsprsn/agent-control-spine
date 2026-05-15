@@ -7,7 +7,7 @@ from chat.models import MessageRole
 
 
 class ChatRequest(BaseModel):
-    agent_id: uuid.UUID
+    agent_id: uuid.UUID | None = None
     message: str
     conversation_id: uuid.UUID | None = None
 

@@ -87,4 +87,4 @@ jobs:
 
       - name: Build service images
         run: |
-          docker compose build registry catalog observer chat
+          docker compose build registry catalog observer chat dashboard chat-app

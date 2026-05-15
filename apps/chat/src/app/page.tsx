@@ -49,7 +49,7 @@ export default function ChatPage() {
               setMessages((prev) =>
                 prev.map((m) =>
                   m.id === assistantId
-                    ? { ...m, tool_calls: [...(m.tool_calls ?? []), { ...toolCall, status: "running" }] }
+                    ? { ...m, tool_calls: [...(m.tool_calls ?? []), { id: toolCall.call_id, name: toolCall.name, args: toolCall.args, status: "running" }] }
                     : m,
                 ),
               );
@@ -61,7 +61,7 @@ export default function ChatPage() {
                     ? {
                         ...m,
                         tool_calls: m.tool_calls?.map((tc) =>
-                          tc.id === result.tool_call_id
+                          tc.id === result.call_id
                             ? { ...tc, result: result.result, status: "done" as const }
                             : tc,
                         ),

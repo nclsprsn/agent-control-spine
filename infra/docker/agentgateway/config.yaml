@@ -1,0 +1,19 @@
+# AgentGateway Configuration
+# See https://agentgateway.dev for full documentation
+
+version: v1
+
+listeners:
+  - name: main
+    protocol: http
+    address: 0.0.0.0:8080
+
+targets:
+  - name: registry
+    url: http://registry:8081
+  - name: catalog
+    url: http://catalog:8082
+  - name: observer
+    url: http://observer:8083
+  - name: chat
+    url: http://chat:8084

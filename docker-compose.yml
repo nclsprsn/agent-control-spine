@@ -1,0 +1,261 @@
+services:
+  # ---------------------------------------------------------------------------
+  # Infrastructure
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-spine}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-spine-dev-password}
+      POSTGRES_DB: ${POSTGRES_DB:-spine}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-spine}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:8-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  nats:
+    image: nats:2.14-alpine
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    volumes:
+      - ./infra/docker/nats/nats-server.conf:/etc/nats/nats-server.conf
+    command: ["-c", "/etc/nats/nats-server.conf"]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8222/healthz || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      KC_HTTP_ENABLED: "true"
+      KC_HTTP_PORT: "8443"
+      KC_HEALTH_ENABLED: "true"
+    ports:
+      - "8443:8443"
+    volumes:
+      - keycloak_data:/opt/keycloak/data
+      - ./infra/docker/keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
+    command: ["start-dev", "--import-realm"]
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/9000 && echo -e 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && cat <&3 | grep -q '200'"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  agentgateway:
+    image: ghcr.io/agentgateway/agentgateway:latest
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./infra/docker/agentgateway/config.yaml:/app/config.yaml
+    depends_on:
+      keycloak:
+        condition: service_healthy
+
+  # ---------------------------------------------------------------------------
+  # Observability
+  # ---------------------------------------------------------------------------
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.152.0
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+    volumes:
+      - ./infra/docker/otel-collector/config.yaml:/etc/otelcol-contrib/config.yaml
+
+  tempo:
+    image: grafana/tempo:2.10.5
+    ports:
+      - "3200:3200"
+    volumes:
+      - ./infra/docker/tempo/tempo.yaml:/etc/tempo.yaml
+      - tempo_data:/var/tempo
+    command: ["-config.file=/etc/tempo.yaml"]
+
+  loki:
+    image: grafana/loki:3.7.2
+    ports:
+      - "3100:3100"
+    volumes:
+      - loki_data:/loki
+
+  prometheus:
+    image: prom/prometheus:v3.12.0
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./infra/docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+
+  grafana:
+    image: grafana/grafana:13.0.1
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+    volumes:
+      - ./infra/docker/grafana/provisioning:/etc/grafana/provisioning
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - tempo
+      - loki
+      - prometheus
+
+  # ---------------------------------------------------------------------------
+  # Application Services
+  # ---------------------------------------------------------------------------
+  registry:
+    build:
+      context: .
+      dockerfile: services/registry/Dockerfile
+    ports:
+      - "8081:8081"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-spine}:${POSTGRES_PASSWORD:-spine-dev-password}@postgres:5432/${POSTGRES_DB:-spine}
+      REDIS_URL: redis://redis:6379/0
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      LOG_LEVEL: INFO
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c 'import urllib.request; urllib.request.urlopen(\"http://localhost:8081/healthz\")'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  catalog:
+    build:
+      context: .
+      dockerfile: services/catalog/Dockerfile
+    ports:
+      - "8082:8082"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-spine}:${POSTGRES_PASSWORD:-spine-dev-password}@postgres:5432/${POSTGRES_DB:-spine}
+      REDIS_URL: redis://redis:6379/0
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      LOG_LEVEL: INFO
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c 'import urllib.request; urllib.request.urlopen(\"http://localhost:8082/healthz\")'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  observer:
+    build:
+      context: .
+      dockerfile: services/observer/Dockerfile
+    ports:
+      - "8083:8083"
+    environment:
+      NATS_URL: nats://nats:4222
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      LOG_LEVEL: INFO
+    depends_on:
+      nats:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c 'import urllib.request; urllib.request.urlopen(\"http://localhost:8083/healthz\")'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  chat:
+    build:
+      context: .
+      dockerfile: services/chat/Dockerfile
+    ports:
+      - "8084:8084"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-spine}:${POSTGRES_PASSWORD:-spine-dev-password}@postgres:5432/${POSTGRES_DB:-spine}
+      REDIS_URL: redis://redis:6379/0
+      REGISTRY_URL: http://registry:8081
+      CATALOG_URL: http://catalog:8082
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      LOG_LEVEL: INFO
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      registry:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c 'import urllib.request; urllib.request.urlopen(\"http://localhost:8084/healthz\")'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ---------------------------------------------------------------------------
+  # Frontend Apps
+  # ---------------------------------------------------------------------------
+  dashboard:
+    build:
+      context: apps/dashboard
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8080
+    depends_on:
+      registry:
+        condition: service_healthy
+
+  chat-app:
+    build:
+      context: apps/chat
+      dockerfile: Dockerfile
+    ports:
+      - "3002:3002"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8080
+    depends_on:
+      chat:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  redis_data:
+  keycloak_data:
+  tempo_data:
+  loki_data:
+  prometheus_data:
+  grafana_data:

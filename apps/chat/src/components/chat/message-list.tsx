@@ -9,11 +9,13 @@ import { ToolCallCard } from "./tool-call-card";
 function ElapsedTimer() {
   const t = useTranslations("chat");
   const [elapsed, setElapsed] = useState(0);
-  const startRef = useRef(Date.now());
+  const startRef = useRef<number | null>(null);
 
   useEffect(() => {
+    startRef.current = Date.now();
     const interval = setInterval(() => {
-      setElapsed(Math.floor((Date.now() - startRef.current) / 1000));
+      const start = startRef.current ?? Date.now();
+      setElapsed(Math.floor((Date.now() - start) / 1000));
     }, 1000);
     return () => clearInterval(interval);
   }, []);

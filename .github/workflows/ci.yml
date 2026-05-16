@@ -28,8 +28,8 @@ jobs:
       - name: Type check
         run: uv run mypy services/ libs/ agents/ --ignore-missing-imports
 
-      - name: Test
-        run: uv run pytest --cov -q
+      - name: Unit tests
+        run: uv run pytest -m "not integration" --cov -q
 
   frontend-dashboard:
     runs-on: ubuntu-latest

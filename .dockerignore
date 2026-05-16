@@ -1,0 +1,51 @@
+# VCS
+.git
+.gitignore
+.gitattributes
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.venv
+venv
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.coverage
+coverage
+htmlcov
+*.egg-info
+
+# Node / Next.js
+node_modules
+.next
+out
+dist
+build
+.turbo
+.swc
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+!.env.local.example
+
+# Editors / OS
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+*.swp
+
+# Misc
+*.log
+.cache
+tmp
+docs
+README.md
+*.md
+!CLAUDE.md
+!AGENTS.md

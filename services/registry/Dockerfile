@@ -6,8 +6,10 @@ COPY services/registry ./services/registry
 RUN uv sync --frozen --no-dev --no-editable --package registry
 
 FROM python:3.14-slim-bookworm
+RUN useradd -u 1000 -m -s /usr/sbin/nologin app
 WORKDIR /app
-COPY --from=builder /app/.venv /app/.venv
+COPY --from=builder --chown=app:app /app/.venv /app/.venv
 ENV PATH="/app/.venv/bin:$PATH"
+USER app
 EXPOSE 8081
 CMD ["uvicorn", "registry.main:app", "--host", "0.0.0.0", "--port", "8081"]

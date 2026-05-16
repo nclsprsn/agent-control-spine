@@ -272,6 +272,33 @@ async def test_search_requires_query(authed_client: httpx.AsyncClient, catalog_u
     assert resp.status_code == 422
 
 
+@pytest.mark.integration
+async def test_search_ranks_name_above_description(authed_client: httpx.AsyncClient, catalog_url: str, require_stack):
+    suffix = uuid.uuid4().hex[:8]
+    term = f"vorpalblade{suffix}"
+    name_match = await authed_client.post(
+        f"{catalog_url}/v1/catalog/capabilities",
+        json={"name": f"{term}-cap", "description": "unrelated text", "tags": []},
+    )
+    desc_match = await authed_client.post(
+        f"{catalog_url}/v1/catalog/capabilities",
+        json={"name": f"other-cap-{suffix}", "description": f"contains {term} inside", "tags": []},
+    )
+    name_id = name_match.json()["id"]
+    desc_id = desc_match.json()["id"]
+
+    try:
+        resp = await authed_client.get(f"{catalog_url}/v1/catalog/search?q={term}")
+        assert resp.status_code == 200
+        items = resp.json()["capabilities"]
+        ids = [c["id"] for c in items]
+        assert name_id in ids and desc_id in ids
+        assert ids.index(name_id) < ids.index(desc_id)
+    finally:
+        await authed_client.delete(f"{catalog_url}/v1/catalog/capabilities/{name_id}")
+        await authed_client.delete(f"{catalog_url}/v1/catalog/capabilities/{desc_id}")
+
+
 # --- Health ---
 
 

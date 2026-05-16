@@ -84,7 +84,7 @@ class AgentOrchestrator:
                         if content := delta.get("content"):
                             full_content += content
                             yield {"type": "text_delta", "content": content}
-                    except (json.JSONDecodeError, KeyError, IndexError):
+                    except json.JSONDecodeError, KeyError, IndexError:
                         continue
 
         if generation is not None:

@@ -26,8 +26,7 @@ def get_service(session: Annotated[AsyncSession, Depends(get_session)]) -> Agent
     status_code=201,
     summary="Register agent",
     description=(
-        "Register a new agent with the control plane. "
-        "Returns the created agent with assigned ID and initial status."
+        "Register a new agent with the control plane. Returns the created agent with assigned ID and initial status."
     ),
     responses={409: {"description": "Agent with same name/version already exists"}},
 )

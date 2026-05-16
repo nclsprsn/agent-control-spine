@@ -2,13 +2,11 @@ import asyncio
 from logging.config import fileConfig
 
 from alembic import context
-from sqlalchemy import pool
-from sqlalchemy.ext.asyncio import create_async_engine
-
+from registry.models import Agent  # noqa: F401
 from spine_common.config import SpineSettings
 from spine_common.models import Base
-
-from registry.models import Agent  # noqa: F401
+from sqlalchemy import pool
+from sqlalchemy.ext.asyncio import create_async_engine
 
 config = context.config
 if config.config_file_name is not None:

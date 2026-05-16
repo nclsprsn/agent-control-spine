@@ -40,7 +40,7 @@ def get_user_id(request: Request) -> str:
             padding = "=" * (4 - len(payload) % 4)
             claims = json.loads(urlsafe_b64decode(payload + padding))
             return claims.get("sub") or claims.get("preferred_username") or "anonymous"
-        except (IndexError, ValueError, json.JSONDecodeError):
+        except IndexError, ValueError, json.JSONDecodeError:
             pass
     return "anonymous"
 

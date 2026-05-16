@@ -1,7 +1,7 @@
 import uuid
 from typing import Any
 
-from sqlalchemy import cast, func, or_, select
+from sqlalchemy import cast, func, select
 from sqlalchemy.dialects.postgresql import ARRAY as PG_ARRAY
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.types import Text
@@ -31,8 +31,9 @@ class CatalogService:
 
         if tags:
             tag_array = cast(tags, PG_ARRAY(Text))
-            query = query.where(Capability.tags.bool_op("&&")(tag_array))
-            count_query = count_query.where(Capability.tags.bool_op("&&")(tag_array))
+            tags_col = cast(Capability.tags, PG_ARRAY(Text))
+            query = query.where(tags_col.bool_op("&&")(tag_array))
+            count_query = count_query.where(tags_col.bool_op("&&")(tag_array))
 
         total = await self.session.scalar(count_query) or 0
         query = query.offset((page - 1) * page_size).limit(page_size).order_by(Capability.created_at.desc())
@@ -74,8 +75,9 @@ class CatalogService:
 
         if tags:
             tag_array = cast(tags, PG_ARRAY(Text))
-            query = query.where(Tool.tags.bool_op("&&")(tag_array))
-            count_query = count_query.where(Tool.tags.bool_op("&&")(tag_array))
+            tags_col = cast(Tool.tags, PG_ARRAY(Text))
+            query = query.where(tags_col.bool_op("&&")(tag_array))
+            count_query = count_query.where(tags_col.bool_op("&&")(tag_array))
 
         total = await self.session.scalar(count_query) or 0
         query = query.offset((page - 1) * page_size).limit(page_size).order_by(Tool.created_at.desc())
@@ -103,26 +105,27 @@ class CatalogService:
     async def search(
         self, query: str, tags: list[str] | None = None, page: int = 1, page_size: int = 20
     ) -> dict[str, Any]:
-        cap_q = select(Capability).where(
-            or_(
-                Capability.name.ilike(f"%{query}%"),
-                Capability.description.ilike(f"%{query}%"),
-            )
+        ts_query = func.plainto_tsquery("english", query)
+        offset = (page - 1) * page_size
+
+        cap_rank = func.ts_rank(Capability.search_vector, ts_query)
+        cap_q = (
+            select(Capability)
+            .where(Capability.search_vector.op("@@")(ts_query))
+            .order_by(cap_rank.desc(), Capability.created_at.desc())
         )
-        tool_q = select(Tool).where(
-            or_(
-                Tool.name.ilike(f"%{query}%"),
-                Tool.description.ilike(f"%{query}%"),
-            )
+        tool_rank = func.ts_rank(Tool.search_vector, ts_query)
+        tool_q = (
+            select(Tool).where(Tool.search_vector.op("@@")(ts_query)).order_by(tool_rank.desc(), Tool.created_at.desc())
         )
 
         if tags:
             tag_array = cast(tags, PG_ARRAY(Text))
-            cap_q = cap_q.where(Capability.tags.bool_op("&&")(tag_array))
-            tool_q = tool_q.where(Tool.tags.bool_op("&&")(tag_array))
+            cap_q = cap_q.where(cast(Capability.tags, PG_ARRAY(Text)).bool_op("&&")(tag_array))
+            tool_q = tool_q.where(cast(Tool.tags, PG_ARRAY(Text)).bool_op("&&")(tag_array))
 
-        cap_q = cap_q.limit(page_size).offset((page - 1) * page_size)
-        tool_q = tool_q.limit(page_size).offset((page - 1) * page_size)
+        cap_q = cap_q.limit(page_size).offset(offset)
+        tool_q = tool_q.limit(page_size).offset(offset)
 
         cap_result = await self.session.execute(cap_q)
         tool_result = await self.session.execute(tool_q)

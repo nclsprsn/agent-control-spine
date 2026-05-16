@@ -46,7 +46,8 @@ class ConversationService:
             .order_by(Conversation.created_at.desc())
         )
         result = await self.session.execute(query)
-        return list(result.all()), total
+        rows: list[tuple[Conversation, int]] = [(row[0], row[1]) for row in result.all()]
+        return rows, total
 
     async def delete(self, conversation_id: uuid.UUID) -> bool:
         conv = await self.session.get(Conversation, conversation_id)

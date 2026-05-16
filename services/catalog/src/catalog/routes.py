@@ -183,7 +183,11 @@ async def delete_tool(tool_id: uuid.UUID, service: Annotated[CatalogService, Dep
 @router.get(
     "/search",
     summary="Search catalog",
-    description="Full-text search across capabilities and tools. Returns matching items from both collections.",
+    description=(
+        "Full-text search across capabilities and tools using PostgreSQL tsvector. "
+        "Results are ranked by relevance with weighted matching: name (highest) > description > tags. "
+        "Stop-words and very short queries may return no results."
+    ),
 )
 async def search_catalog(
     service: Annotated[CatalogService, Depends(get_service)],

@@ -25,6 +25,7 @@ dev = [
 [tool.ruff]
 target-version = "py314"
 line-length = 120
+extend-exclude = ["services/*/migrations/versions"]
 
 [tool.ruff.lint]
 select = [
@@ -54,6 +55,7 @@ strict = true
 warn_return_any = true
 warn_unused_configs = true
 plugins = ["pydantic.mypy"]
+exclude = ["services/.*/migrations/"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

@@ -72,6 +72,7 @@ class AgentService:
             self.session.add(version)
 
         await self.session.flush()
+        await self.session.refresh(agent)
         return agent
 
     async def delete(self, agent_id: uuid.UUID) -> bool:
@@ -90,4 +91,5 @@ class AgentService:
         if agent.status == AgentStatus.REGISTERED:
             agent.status = AgentStatus.ACTIVE
         await self.session.flush()
+        await self.session.refresh(agent)
         return agent

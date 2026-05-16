@@ -3,7 +3,7 @@ WORKDIR /app
 COPY pyproject.toml uv.lock ./
 COPY libs/spine-common ./libs/spine-common
 COPY services/observer ./services/observer
-RUN uv sync --frozen --no-dev --package observer
+RUN uv sync --frozen --no-dev --no-editable --package observer
 
 FROM python:3.14-slim-bookworm
 WORKDIR /app

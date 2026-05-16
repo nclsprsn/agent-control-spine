@@ -3,7 +3,7 @@ WORKDIR /app
 COPY pyproject.toml uv.lock ./
 COPY libs/spine-common ./libs/spine-common
 COPY services/catalog ./services/catalog
-RUN uv sync --frozen --no-dev --package catalog
+RUN uv sync --frozen --no-dev --no-editable --package catalog
 
 FROM python:3.14-slim-bookworm
 WORKDIR /app

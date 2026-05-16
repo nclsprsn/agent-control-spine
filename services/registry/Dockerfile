@@ -3,7 +3,7 @@ WORKDIR /app
 COPY pyproject.toml uv.lock ./
 COPY libs/spine-common ./libs/spine-common
 COPY services/registry ./services/registry
-RUN uv sync --frozen --no-dev --package registry
+RUN uv sync --frozen --no-dev --no-editable --package registry
 
 FROM python:3.14-slim-bookworm
 WORKDIR /app

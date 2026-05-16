@@ -2,6 +2,7 @@ export interface ChatMessage {
   id: string;
   role: "user" | "assistant" | "system";
   content: string;
+  thinking?: string;
   tool_calls?: ToolCall[];
   created_at: string;
 }

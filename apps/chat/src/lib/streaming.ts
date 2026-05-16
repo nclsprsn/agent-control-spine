@@ -1,17 +1,16 @@
 import type { ChatRequest } from "./types";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
-
 interface StreamCallbacks {
   onTextDelta: (delta: string) => void;
+  onThinkingDelta?: (delta: string) => void;
   onToolCallStart: (toolCall: { call_id: string; name: string; args?: Record<string, unknown> }) => void;
   onToolCallResult: (result: { call_id: string; result: string }) => void;
-  onDone?: () => void;
+  onDone?: (data: { conversation_id?: string }) => void;
   signal?: AbortSignal;
 }
 
 export async function streamChat(request: ChatRequest, callbacks: StreamCallbacks): Promise<void> {
-  const res = await fetch(`${API_URL}/v1/chat`, {
+  const res = await fetch("/api/proxy/v1/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(request),
@@ -56,6 +55,9 @@ function handleSSEEvent(event: string, data: string, callbacks: StreamCallbacks)
       case "text_delta":
         callbacks.onTextDelta(parsed.content);
         break;
+      case "thinking_delta":
+        callbacks.onThinkingDelta?.(parsed.content);
+        break;
       case "tool_call_start":
         callbacks.onToolCallStart(parsed);
         break;
@@ -63,7 +65,7 @@ function handleSSEEvent(event: string, data: string, callbacks: StreamCallbacks)
         callbacks.onToolCallResult(parsed);
         break;
       case "done":
-        callbacks.onDone?.();
+        callbacks.onDone?.(parsed);
         break;
     }
   } catch {

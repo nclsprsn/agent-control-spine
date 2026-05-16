@@ -1,6 +1,2 @@
-// Keycloak OIDC auth via Auth.js v5 — configured when Keycloak is connected.
-// Placeholder: all routes currently open for local development.
-
-export function getAuthHeaders(): Record<string, string> {
-  return {};
-}
+// Keycloak OIDC auth via Auth.js v5 — will be configured as a P0 next step.
+// Currently, server-side API calls use client_credentials flow via api.ts.

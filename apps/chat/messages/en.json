@@ -1,0 +1,25 @@
+{
+  "common": {
+    "appName": "Spine Chat"
+  },
+  "sidebar": {
+    "newChat": "New chat",
+    "noConversations": "No conversations",
+    "history": "History",
+    "signOut": "Sign out",
+    "deleteConfirm": "Delete this conversation?",
+    "deleted": "Conversation deleted"
+  },
+  "chat": {
+    "placeholder": "Send a message...",
+    "emptyState": "What can I help you with?",
+    "shiftEnter": "Shift+Enter for new line",
+    "defaultAgent": "Default agent",
+    "elapsed": "{seconds}s",
+    "thinking": "Thinking"
+  },
+  "history": {
+    "title": "History",
+    "empty": "Conversation history will appear here."
+  }
+}

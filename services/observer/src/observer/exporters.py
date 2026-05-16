@@ -1,4 +1,5 @@
 import json
+from typing import Any
 
 import nats
 from nats.aio.client import Client as NATSClient
@@ -11,7 +12,7 @@ class NATSExporter:
     async def connect(self, nats_url: str) -> None:
         self._nc = await nats.connect(nats_url)
 
-    async def publish(self, subject: str, data: dict) -> None:
+    async def publish(self, subject: str, data: dict[str, Any]) -> None:
         if self._nc is None:
             return
         payload = json.dumps(data).encode()

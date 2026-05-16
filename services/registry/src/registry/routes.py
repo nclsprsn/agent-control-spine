@@ -2,17 +2,17 @@ import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from spine_common.schemas import PaginatedResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from registry.models import AgentStatus
 from registry.schemas import AgentCreate, AgentResponse, AgentUpdate
 from registry.service import AgentService
-from spine_common.schemas import PaginatedResponse
 
 router = APIRouter(prefix="/v1/agents", tags=["agents"])
 
 
-async def get_session() -> AsyncSession:  # type: ignore[misc]
+async def get_session() -> AsyncSession:
     raise NotImplementedError("Overridden at app startup")
 
 
@@ -20,7 +20,17 @@ def get_service(session: Annotated[AsyncSession, Depends(get_session)]) -> Agent
     return AgentService(session)
 
 
-@router.post("/", response_model=AgentResponse, status_code=201)
+@router.post(
+    "/",
+    response_model=AgentResponse,
+    status_code=201,
+    summary="Register agent",
+    description=(
+        "Register a new agent with the control plane. "
+        "Returns the created agent with assigned ID and initial status."
+    ),
+    responses={409: {"description": "Agent with same name/version already exists"}},
+)
 async def create_agent(
     data: AgentCreate,
     service: Annotated[AgentService, Depends(get_service)],
@@ -29,7 +39,12 @@ async def create_agent(
     return AgentResponse.model_validate(agent)
 
 
-@router.get("/", response_model=PaginatedResponse[AgentResponse])
+@router.get(
+    "/",
+    response_model=PaginatedResponse[AgentResponse],
+    summary="List agents",
+    description="Retrieve paginated list of registered agents. Optionally filter by status.",
+)
 async def list_agents(
     service: Annotated[AgentService, Depends(get_service)],
     page: int = Query(1, ge=1),
@@ -45,7 +60,13 @@ async def list_agents(
     )
 
 
-@router.get("/{agent_id}", response_model=AgentResponse)
+@router.get(
+    "/{agent_id}",
+    response_model=AgentResponse,
+    summary="Get agent",
+    description="Retrieve a single agent by ID.",
+    responses={404: {"description": "Agent not found"}},
+)
 async def get_agent(
     agent_id: uuid.UUID,
     service: Annotated[AgentService, Depends(get_service)],
@@ -56,7 +77,13 @@ async def get_agent(
     return AgentResponse.model_validate(agent)
 
 
-@router.patch("/{agent_id}", response_model=AgentResponse)
+@router.patch(
+    "/{agent_id}",
+    response_model=AgentResponse,
+    summary="Update agent",
+    description="Partially update an agent's fields. Only provided fields are modified.",
+    responses={404: {"description": "Agent not found"}},
+)
 async def update_agent(
     agent_id: uuid.UUID,
     data: AgentUpdate,
@@ -68,7 +95,13 @@ async def update_agent(
     return AgentResponse.model_validate(agent)
 
 
-@router.delete("/{agent_id}", status_code=204)
+@router.delete(
+    "/{agent_id}",
+    status_code=204,
+    summary="Delete agent",
+    description="Permanently remove an agent from the registry.",
+    responses={404: {"description": "Agent not found"}},
+)
 async def delete_agent(
     agent_id: uuid.UUID,
     service: Annotated[AgentService, Depends(get_service)],
@@ -78,7 +111,13 @@ async def delete_agent(
         raise HTTPException(status_code=404, detail="Agent not found")
 
 
-@router.post("/{agent_id}/heartbeat", response_model=AgentResponse)
+@router.post(
+    "/{agent_id}/heartbeat",
+    response_model=AgentResponse,
+    summary="Agent heartbeat",
+    description="Report agent liveness. Updates last_heartbeat_at and transitions status to active.",
+    responses={404: {"description": "Agent not found"}},
+)
 async def heartbeat(
     agent_id: uuid.UUID,
     service: Annotated[AgentService, Depends(get_service)],

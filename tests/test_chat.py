@@ -1,6 +1,11 @@
 import uuid
 
-from chat.schemas import ChatRequest
+import httpx
+import pytest
+from chat.models import MessageRole
+from chat.schemas import ChatRequest, DoneEvent, TextDeltaEvent
+
+# --- Unit Tests ---
 
 
 def test_chat_request_schema():
@@ -16,3 +21,185 @@ def test_chat_request_with_conversation():
     conv_id = uuid.uuid4()
     data = ChatRequest(agent_id=agent_id, message="Follow up", conversation_id=conv_id)
     assert data.conversation_id == conv_id
+
+
+def test_text_delta_event():
+    event = TextDeltaEvent(content="Hello")
+    assert event.type == "text_delta"
+    assert event.content == "Hello"
+
+
+def test_done_event():
+    conv_id = uuid.uuid4()
+    msg_id = uuid.uuid4()
+    event = DoneEvent(conversation_id=conv_id, message_id=msg_id)
+    assert event.type == "done"
+    assert event.conversation_id == conv_id
+
+
+def test_message_role_values():
+    assert MessageRole.USER == "user"
+    assert MessageRole.ASSISTANT == "assistant"
+    assert MessageRole.TOOL == "tool"
+
+
+# --- Integration Tests ---
+
+
+@pytest.mark.integration
+async def test_chat_sse_stream(authed_client: httpx.AsyncClient, chat_url: str, require_stack):
+    async with authed_client.stream(
+        "POST",
+        f"{chat_url}/v1/chat",
+        json={"message": "Say hello in one word"},
+        headers={"x-user-id": "test-user-sse"},
+    ) as resp:
+        assert resp.status_code == 200
+        assert "text/event-stream" in resp.headers.get("content-type", "")
+        events = []
+        async for line in resp.aiter_lines():
+            line = line.strip()
+            if line.startswith("data:"):
+                events.append(line[5:].strip())
+        assert len(events) > 0
+
+
+@pytest.mark.integration
+async def test_chat_creates_conversation(
+    authed_client: httpx.AsyncClient, chat_url: str, auth_token: str, require_stack
+):
+    user_id = f"test-user-{uuid.uuid4().hex[:8]}"
+    headers = {"Authorization": f"Bearer {auth_token}", "x-user-id": user_id}
+    async with (
+        httpx.AsyncClient(timeout=30.0) as stream_client,
+        stream_client.stream(
+            "POST",
+            f"{chat_url}/v1/chat",
+            json={"message": "Hello"},
+            headers=headers,
+        ) as resp,
+    ):
+        async for _ in resp.aiter_lines():
+            pass
+
+    convs = await authed_client.get(f"{chat_url}/v1/conversations", headers={"x-user-id": user_id})
+    assert convs.status_code == 200
+    items = convs.json()["items"]
+    assert len(items) >= 1
+
+    for conv in items:
+        await authed_client.delete(f"{chat_url}/v1/conversations/{conv['id']}")
+
+
+@pytest.mark.integration
+async def test_list_conversations(authed_client: httpx.AsyncClient, chat_url: str, require_stack):
+    resp = await authed_client.get(f"{chat_url}/v1/conversations", headers={"x-user-id": "test-list-user"})
+    assert resp.status_code == 200
+    body = resp.json()
+    assert "items" in body
+    assert "total" in body
+
+
+@pytest.mark.integration
+async def test_list_conversations_user_isolation(
+    authed_client: httpx.AsyncClient, chat_url: str, auth_token: str, require_stack
+):
+    user_a = f"user-a-{uuid.uuid4().hex[:8]}"
+    user_b = f"user-b-{uuid.uuid4().hex[:8]}"
+
+    headers = {"Authorization": f"Bearer {auth_token}", "x-user-id": user_a}
+    async with (
+        httpx.AsyncClient(timeout=30.0) as stream_client,
+        stream_client.stream(
+            "POST",
+            f"{chat_url}/v1/chat",
+            json={"message": "Hello from A"},
+            headers=headers,
+        ) as resp,
+    ):
+        async for _ in resp.aiter_lines():
+            pass
+
+    convs_b = await authed_client.get(f"{chat_url}/v1/conversations", headers={"x-user-id": user_b})
+    assert convs_b.json()["total"] == 0
+
+    convs_a = await authed_client.get(f"{chat_url}/v1/conversations", headers={"x-user-id": user_a})
+    for conv in convs_a.json()["items"]:
+        await authed_client.delete(f"{chat_url}/v1/conversations/{conv['id']}")
+
+
+@pytest.mark.integration
+async def test_get_conversation_detail(authed_client: httpx.AsyncClient, chat_url: str, auth_token: str, require_stack):
+    user_id = f"test-detail-{uuid.uuid4().hex[:8]}"
+    headers = {"Authorization": f"Bearer {auth_token}", "x-user-id": user_id}
+    async with (
+        httpx.AsyncClient(timeout=30.0) as stream_client,
+        stream_client.stream(
+            "POST",
+            f"{chat_url}/v1/chat",
+            json={"message": "Detail test"},
+            headers=headers,
+        ) as resp,
+    ):
+        async for _ in resp.aiter_lines():
+            pass
+
+    convs = await authed_client.get(f"{chat_url}/v1/conversations", headers={"x-user-id": user_id})
+    conv_id = convs.json()["items"][0]["id"]
+
+    detail = await authed_client.get(f"{chat_url}/v1/conversations/{conv_id}")
+    assert detail.status_code == 200
+    assert "messages" in detail.json()
+    assert len(detail.json()["messages"]) >= 1
+
+    await authed_client.delete(f"{chat_url}/v1/conversations/{conv_id}")
+
+
+@pytest.mark.integration
+async def test_get_conversation_not_found(authed_client: httpx.AsyncClient, chat_url: str, require_stack):
+    resp = await authed_client.get(f"{chat_url}/v1/conversations/{uuid.uuid4()}")
+    assert resp.status_code == 404
+
+
+@pytest.mark.integration
+async def test_delete_conversation(authed_client: httpx.AsyncClient, chat_url: str, auth_token: str, require_stack):
+    user_id = f"test-delete-{uuid.uuid4().hex[:8]}"
+    headers = {"Authorization": f"Bearer {auth_token}", "x-user-id": user_id}
+    async with (
+        httpx.AsyncClient(timeout=30.0) as stream_client,
+        stream_client.stream(
+            "POST",
+            f"{chat_url}/v1/chat",
+            json={"message": "Delete me"},
+            headers=headers,
+        ) as resp,
+    ):
+        async for _ in resp.aiter_lines():
+            pass
+
+    convs = await authed_client.get(f"{chat_url}/v1/conversations", headers={"x-user-id": user_id})
+    conv_id = convs.json()["items"][0]["id"]
+
+    del_resp = await authed_client.delete(f"{chat_url}/v1/conversations/{conv_id}")
+    assert del_resp.status_code == 204
+
+    get_resp = await authed_client.get(f"{chat_url}/v1/conversations/{conv_id}")
+    assert get_resp.status_code == 404
+
+
+@pytest.mark.integration
+async def test_delete_conversation_not_found(authed_client: httpx.AsyncClient, chat_url: str, require_stack):
+    resp = await authed_client.delete(f"{chat_url}/v1/conversations/{uuid.uuid4()}")
+    assert resp.status_code == 404
+
+
+@pytest.mark.integration
+async def test_chat_healthz(http_client: httpx.AsyncClient, chat_url: str, require_stack):
+    resp = await http_client.get(f"{chat_url}/healthz")
+    assert resp.status_code == 200
+
+
+@pytest.mark.integration
+async def test_chat_readyz(http_client: httpx.AsyncClient, chat_url: str, require_stack):
+    resp = await http_client.get(f"{chat_url}/readyz")
+    assert resp.status_code == 200

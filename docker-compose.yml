@@ -11,7 +11,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql
       - ./infra/docker/postgres:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-spine}"]
@@ -53,6 +53,8 @@ services:
       KC_HTTP_ENABLED: "true"
       KC_HTTP_PORT: "8443"
       KC_HEALTH_ENABLED: "true"
+      KC_HOSTNAME: http://localhost:8443
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
     ports:
       - "8443:8443"
     volumes:
@@ -67,9 +69,12 @@ services:
       start_period: 30s
 
   agentgateway:
-    image: ghcr.io/agentgateway/agentgateway:latest
+    image: ghcr.io/agentgateway/agentgateway:v1.2.1
+    command: ["-f", "/app/config.yaml"]
     ports:
       - "8080:8080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ./infra/docker/agentgateway/config.yaml:/app/config.yaml
     depends_on:
@@ -104,7 +109,7 @@ services:
       - loki_data:/loki
 
   prometheus:
-    image: prom/prometheus:v3.12.0
+    image: prom/prometheus:v3.11.3
     ports:
       - "9090:9090"
     volumes:
@@ -129,7 +134,7 @@ services:
       - prometheus
 
   langfuse:
-    image: langfuse/langfuse:3
+    image: langfuse/langfuse:2
     ports:
       - "3003:3000"
     environment:
@@ -137,12 +142,13 @@ services:
       NEXTAUTH_SECRET: langfuse-dev-secret
       SALT: langfuse-dev-salt
       NEXTAUTH_URL: http://localhost:3003
+      HOSTNAME: "0.0.0.0"
       TELEMETRY_ENABLED: "false"
     depends_on:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/public/health || exit 1"]
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:3000/api/public/health',r=>{let d='';r.on('data',c=>d+=c);r.on('end',()=>{process.exit(r.statusCode===200?0:1)})}).on('error',()=>process.exit(1))\""]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -217,6 +223,22 @@ services:
       retries: 5
       start_period: 10s
 
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ${HOME}/.ollama:/root/.ollama
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
   chat:
     build:
       context: .
@@ -228,6 +250,7 @@ services:
       REDIS_URL: redis://redis:6379/0
       REGISTRY_URL: http://registry:8081
       CATALOG_URL: http://catalog:8082
+      OLLAMA_BASE_URL: http://ollama:11434/v1
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
       LOG_LEVEL: INFO
       LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-}
@@ -242,6 +265,8 @@ services:
       registry:
         condition: service_healthy
       langfuse:
+        condition: service_healthy
+      ollama:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "python -c 'import urllib.request; urllib.request.urlopen(\"http://localhost:8084/healthz\")'"]
@@ -261,7 +286,14 @@ services:
       - "3001:3001"
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:8080
+      INTERNAL_API_URL: http://agentgateway:8080
+      KEYCLOAK_URL: http://keycloak:8443
+      KEYCLOAK_REALM: spine
+      KEYCLOAK_CLIENT_ID: spine-services
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET_SERVICES:-change-me-in-production}
     depends_on:
+      agentgateway:
+        condition: service_started
       registry:
         condition: service_healthy
 
@@ -269,10 +301,15 @@ services:
     build:
       context: apps/chat
       dockerfile: Dockerfile
-    ports:
-      - "3002:3002"
+    network_mode: host
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:8080
+      AUTH_KEYCLOAK_ID: spine-chat
+      AUTH_KEYCLOAK_SECRET: spine-chat-secret
+      AUTH_KEYCLOAK_ISSUER: http://localhost:8443/realms/spine
+      AUTH_SECRET: dev-secret-change-in-production-32chars
+      AUTH_TRUST_HOST: "true"
+      AUTH_URL: http://localhost:3002
+      GATEWAY_INTERNAL_URL: http://localhost:8080
     depends_on:
       chat:
         condition: service_healthy

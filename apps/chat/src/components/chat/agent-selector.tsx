@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api";
 import type { Agent } from "@/lib/types";
 
@@ -16,6 +17,7 @@ export function AgentSelector({
   value: string | null;
   onChange: (agentId: string | null) => void;
 }) {
+  const t = useTranslations("chat");
   const [agents, setAgents] = useState<Agent[]>([]);
 
   useEffect(() => {
@@ -28,9 +30,9 @@ export function AgentSelector({
     <select
       value={value ?? ""}
       onChange={(e) => onChange(e.target.value || null)}
-      className="border border-gray-300 rounded-md px-3 py-1.5 text-sm bg-white"
+      className="bg-transparent border border-border rounded-md px-2 py-1 text-[0.75rem] text-muted hover:text-foreground focus:outline-none focus:border-muted/50 transition-colors cursor-pointer"
     >
-      <option value="">Auto (default agent)</option>
+      <option value="">{t("defaultAgent")}</option>
       {agents.map((agent) => (
         <option key={agent.id} value={agent.id}>
           {agent.name} v{agent.version}

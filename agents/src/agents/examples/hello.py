@@ -15,7 +15,9 @@ class GreetingResponse(BaseModel):
 hello_agent = Agent(
     "openai:gpt-4o-mini",
     output_type=GreetingResponse,
-    system_prompt="You are a friendly greeting agent. Always use the current_time tool to include the time in your greeting.",
+    system_prompt=(
+        "You are a friendly greeting agent. Always use the current_time tool to include the time in your greeting."
+    ),
 )
 
 

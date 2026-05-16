@@ -1,6 +1,7 @@
 """Seed database with sample agents, capabilities, and tools."""
 
 import asyncio
+
 import httpx
 
 REGISTRY_URL = "http://localhost:8081"
@@ -30,6 +31,13 @@ SAMPLE_AGENTS = [
         "owner": "support-team",
         "metadata": {"category": "support", "tier": "L1"},
     },
+    {
+        "name": "rfp-responder",
+        "version": "1.0.0",
+        "description": "Generates structured RFP responses with executive summary, approach, timeline, and pricing",
+        "owner": "platform-team",
+        "metadata": {"category": "proposals", "model": "qwen3:8b"},
+    },
 ]
 
 SAMPLE_CAPABILITIES = [
@@ -48,6 +56,12 @@ SAMPLE_CAPABILITIES = [
         "name": "knowledge-lookup",
         "description": "Search knowledge base for relevant articles",
         "tags": ["search", "knowledge", "support"],
+    },
+    {
+        "name": "rfp-response",
+        "description": "Generate structured responses to Requests for Proposals",
+        "tags": ["rfp", "proposals", "business"],
+        "input_schema": {"type": "object", "properties": {"rfp_content": {"type": "string"}}},
     },
 ]
 

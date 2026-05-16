@@ -1,36 +1,45 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Poppins, JetBrains_Mono } from "next/font/google";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getMessages } from "next-intl/server";
 import "./globals.css";
 import { ConversationSidebar } from "@/components/chat/conversation-sidebar";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const poppins = Poppins({
+  variable: "--font-poppins",
   subsets: ["latin"],
+  weight: ["300", "400", "500", "600"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-mono",
   subsets: ["latin"],
+  weight: ["400"],
 });
 
 export const metadata: Metadata = {
-  title: "Agent Control Spine — Chat",
+  title: "Spine — Chat",
   description: "Chat with AI agents",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = await getLocale();
+  const messages = await getMessages();
+
   return (
     <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      lang={locale}
+      className={`${poppins.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
-      <body className="h-full flex">
-        <ConversationSidebar />
-        <main className="flex-1 flex flex-col h-full">{children}</main>
+      <body className="h-full flex bg-background text-foreground font-[family-name:var(--font-poppins)]">
+        <NextIntlClientProvider messages={messages}>
+          <ConversationSidebar />
+          <main className="flex-1 flex flex-col h-full overflow-hidden">{children}</main>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

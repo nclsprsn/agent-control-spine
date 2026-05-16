@@ -12,8 +12,8 @@ members = [
     "agents",
 ]
 
-[tool.uv]
-dev-dependencies = [
+[dependency-groups]
+dev = [
     "ruff>=0.11",
     "mypy>=1.15",
     "pytest>=8.3",
@@ -41,7 +41,12 @@ select = [
     "SIM",
     "RUF",
 ]
-ignore = ["S104"]
+ignore = ["B008", "S104", "UP046"]
+
+[tool.ruff.lint.per-file-ignores]
+"scripts/*" = ["T201"]
+"agents/*" = ["T201"]
+"tests/*" = ["S101"]
 
 [tool.mypy]
 python_version = "3.14"
@@ -53,3 +58,7 @@ plugins = ["pydantic.mypy"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+markers = [
+    "integration: requires running Docker stack (make dev)",
+    "ollama: requires Ollama with qwen3:8b model",
+]

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { AgentSelector } from "@/components/chat/agent-selector";
 import { MessageList } from "@/components/chat/message-list";
 import { MessageInput } from "@/components/chat/message-input";
@@ -8,10 +9,12 @@ import type { ChatMessage } from "@/lib/types";
 import { streamChat } from "@/lib/streaming";
 
 export default function ChatPage() {
+  const t = useTranslations("common");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
   const [isStreaming, setIsStreaming] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
+  const [conversationId, setConversationId] = useState<string | null>(null);
 
   const handleSend = useCallback(
     async (content: string) => {
@@ -36,8 +39,19 @@ export default function ChatPage() {
 
       try {
         await streamChat(
-          { message: content, agent_id: selectedAgent ?? undefined },
           {
+            message: content,
+            agent_id: selectedAgent ?? undefined,
+            conversation_id: conversationId ?? undefined,
+          },
+          {
+            onThinkingDelta: (delta) => {
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === assistantId ? { ...m, thinking: (m.thinking ?? "") + delta } : m,
+                ),
+              );
+            },
             onTextDelta: (delta) => {
               setMessages((prev) =>
                 prev.map((m) =>
@@ -70,6 +84,11 @@ export default function ChatPage() {
                 ),
               );
             },
+            onDone: (data) => {
+              if (data.conversation_id) {
+                setConversationId(data.conversation_id);
+              }
+            },
             signal: abortRef.current.signal,
           },
         );
@@ -78,17 +97,17 @@ export default function ChatPage() {
         abortRef.current = null;
       }
     },
-    [isStreaming, selectedAgent],
+    [isStreaming, selectedAgent, conversationId],
   );
 
   return (
-    <>
-      <div className="border-b px-4 py-3 flex items-center gap-4">
-        <h1 className="text-lg font-semibold">Chat</h1>
+    <div className="flex flex-col h-full">
+      <header className="border-b border-border px-6 py-3 flex items-center justify-between shrink-0">
+        <span className="text-[0.75rem] font-medium tracking-wide text-muted uppercase">{t("appName")}</span>
         <AgentSelector value={selectedAgent} onChange={setSelectedAgent} />
-      </div>
-      <MessageList messages={messages} />
+      </header>
+      <MessageList messages={messages} isStreaming={isStreaming} />
       <MessageInput onSend={handleSend} disabled={isStreaming} />
-    </>
+    </div>
   );
 }

@@ -1,7 +1,10 @@
 import uuid
+from typing import Any
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import cast, func, or_, select
+from sqlalchemy.dialects.postgresql import ARRAY as PG_ARRAY
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.types import Text
 
 from catalog.models import Capability, Tool
 from catalog.schemas import CapabilityCreate, CapabilityUpdate, ToolCreate, ToolUpdate
@@ -27,8 +30,9 @@ class CatalogService:
         count_query = select(func.count()).select_from(Capability)
 
         if tags:
-            query = query.where(Capability.tags.overlap(tags))
-            count_query = count_query.where(Capability.tags.overlap(tags))
+            tag_array = cast(tags, PG_ARRAY(Text))
+            query = query.where(Capability.tags.bool_op("&&")(tag_array))
+            count_query = count_query.where(Capability.tags.bool_op("&&")(tag_array))
 
         total = await self.session.scalar(count_query) or 0
         query = query.offset((page - 1) * page_size).limit(page_size).order_by(Capability.created_at.desc())
@@ -42,6 +46,7 @@ class CatalogService:
         for field, value in data.model_dump(exclude_unset=True).items():
             setattr(cap, field, value)
         await self.session.flush()
+        await self.session.refresh(cap)
         return cap
 
     async def delete_capability(self, cap_id: uuid.UUID) -> bool:
@@ -68,8 +73,9 @@ class CatalogService:
         count_query = select(func.count()).select_from(Tool)
 
         if tags:
-            query = query.where(Tool.tags.overlap(tags))
-            count_query = count_query.where(Tool.tags.overlap(tags))
+            tag_array = cast(tags, PG_ARRAY(Text))
+            query = query.where(Tool.tags.bool_op("&&")(tag_array))
+            count_query = count_query.where(Tool.tags.bool_op("&&")(tag_array))
 
         total = await self.session.scalar(count_query) or 0
         query = query.offset((page - 1) * page_size).limit(page_size).order_by(Tool.created_at.desc())
@@ -83,6 +89,7 @@ class CatalogService:
         for field, value in data.model_dump(exclude_unset=True).items():
             setattr(tool, field, value)
         await self.session.flush()
+        await self.session.refresh(tool)
         return tool
 
     async def delete_tool(self, tool_id: uuid.UUID) -> bool:
@@ -95,7 +102,7 @@ class CatalogService:
 
     async def search(
         self, query: str, tags: list[str] | None = None, page: int = 1, page_size: int = 20
-    ) -> dict:
+    ) -> dict[str, Any]:
         cap_q = select(Capability).where(
             or_(
                 Capability.name.ilike(f"%{query}%"),
@@ -110,8 +117,9 @@ class CatalogService:
         )
 
         if tags:
-            cap_q = cap_q.where(Capability.tags.overlap(tags))
-            tool_q = tool_q.where(Tool.tags.overlap(tags))
+            tag_array = cast(tags, PG_ARRAY(Text))
+            cap_q = cap_q.where(Capability.tags.bool_op("&&")(tag_array))
+            tool_q = tool_q.where(Tool.tags.bool_op("&&")(tag_array))
 
         cap_q = cap_q.limit(page_size).offset((page - 1) * page_size)
         tool_q = tool_q.limit(page_size).offset((page - 1) * page_size)

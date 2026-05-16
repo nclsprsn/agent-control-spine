@@ -1,19 +1,96 @@
-# AgentGateway Configuration
-# See https://agentgateway.dev for full documentation
+# AgentGateway v1.2.1 — HTTP reverse proxy + JWT validation
+# Docs: https://agentgateway.dev
 
-version: v1
+binds:
+- port: 8080
+  listeners:
+  - protocol: HTTP
+    routes:
+    - name: gateway-health
+      matches:
+      - path:
+          exact: /healthz
+      policies:
+        directResponse:
+          status: 200
+          body: '{"status":"ok","service":"agentgateway"}'
 
-listeners:
-  - name: main
-    protocol: http
-    address: 0.0.0.0:8080
+    - name: registry
+      matches:
+      - path:
+          pathPrefix: /v1/agents
+      policies:
+        jwtAuth:
+          mode: strict
+          issuer: "http://localhost:8443/realms/spine"
+          jwks:
+            url: "http://keycloak:8443/realms/spine/protocol/openid-connect/certs"
+      backends:
+      - host: registry:8081
 
-targets:
-  - name: registry
-    url: http://registry:8081
-  - name: catalog
-    url: http://catalog:8082
-  - name: observer
-    url: http://observer:8083
-  - name: chat
-    url: http://chat:8084
+    - name: catalog
+      matches:
+      - path:
+          pathPrefix: /v1/catalog
+      policies:
+        jwtAuth:
+          mode: strict
+          issuer: "http://localhost:8443/realms/spine"
+          jwks:
+            url: "http://keycloak:8443/realms/spine/protocol/openid-connect/certs"
+      backends:
+      - host: catalog:8082
+
+    - name: chat
+      matches:
+      - path:
+          pathPrefix: /v1/chat
+      policies:
+        jwtAuth:
+          mode: strict
+          issuer: "http://localhost:8443/realms/spine"
+          jwks:
+            url: "http://keycloak:8443/realms/spine/protocol/openid-connect/certs"
+      backends:
+      - host: chat:8084
+
+    - name: conversations
+      matches:
+      - path:
+          pathPrefix: /v1/conversations
+      policies:
+        jwtAuth:
+          mode: strict
+          issuer: "http://localhost:8443/realms/spine"
+          jwks:
+            url: "http://keycloak:8443/realms/spine/protocol/openid-connect/certs"
+      backends:
+      - host: chat:8084
+
+    - name: observer
+      matches:
+      - path:
+          pathPrefix: /v1/events
+      - path:
+          pathPrefix: /v1/traces
+      policies:
+        jwtAuth:
+          mode: strict
+          issuer: "http://localhost:8443/realms/spine"
+          jwks:
+            url: "http://keycloak:8443/realms/spine/protocol/openid-connect/certs"
+      backends:
+      - host: observer:8083
+
+    - name: ollama
+      matches:
+      - path:
+          pathPrefix: /ollama
+      policies:
+        jwtAuth:
+          mode: strict
+          issuer: "http://localhost:8443/realms/spine"
+          jwks:
+            url: "http://keycloak:8443/realms/spine/protocol/openid-connect/certs"
+      backends:
+      - host: host.docker.internal:11434

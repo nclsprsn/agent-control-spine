@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from langfuse import Langfuse
 
@@ -32,19 +32,22 @@ def create_trace(
     name: str,
     user_id: str | None = None,
     session_id: str | None = None,
-    metadata: dict | None = None,
+    metadata: dict[str, Any] | None = None,
     tags: list[str] | None = None,
-):
+) -> Any:
     if _langfuse is None:
         return None
-    return _langfuse.trace(
-        id=str(uuid.uuid4()),
-        name=name,
-        user_id=user_id,
-        session_id=session_id,
-        metadata=metadata,
-        tags=tags or [],
-    )
+    try:
+        return _langfuse.trace(  # type: ignore[attr-defined]
+            id=str(uuid.uuid4()),
+            name=name,
+            user_id=user_id,
+            session_id=session_id,
+            metadata=metadata,
+            tags=tags or [],
+        )
+    except AttributeError, TypeError:
+        return None
 
 
 def flush() -> None:

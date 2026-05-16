@@ -7,10 +7,13 @@ down:
 	docker compose down -v
 
 test:
-	uv run pytest --cov -q
+	uv run pytest --cov -q -m "not integration"
 
 test-int:
 	uv run pytest tests/ -m integration --cov -q
+
+test-all:
+	uv run pytest tests/ --cov -q
 
 lint:
 	uv run ruff check .

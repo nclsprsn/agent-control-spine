@@ -2,14 +2,16 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
-from sqlalchemy.ext.asyncio import AsyncEngine
-
-from registry import routes
-from registry.config import RegistrySettings
 from spine_common.database import create_engine, create_session_factory, get_session
 from spine_common.health import create_health_router
 from spine_common.logging import setup_logging
 from spine_common.middleware import CorrelationIdMiddleware, setup_telemetry
+from spine_common.models import Base
+from sqlalchemy.ext.asyncio import AsyncEngine
+
+from registry import routes
+from registry.config import RegistrySettings
+from registry.models import Agent  # noqa: F401 — register models with Base
 
 settings = RegistrySettings()
 
@@ -19,18 +21,27 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     engine: AsyncEngine = create_engine(settings.database_url)
     factory = create_session_factory(engine)
 
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
     async def session_dependency():  # type: ignore[no-untyped-def]
         async for s in get_session(factory):
             yield s
 
-    routes.get_session = session_dependency  # type: ignore[assignment]
+    app.dependency_overrides[routes.get_session] = session_dependency
 
     app.include_router(create_health_router("registry", engine=engine))
     yield
     await engine.dispose()
 
 
-app = FastAPI(title="Agent Registry", version="0.1.0", lifespan=lifespan)
+app = FastAPI(
+    title="Agent Registry",
+    version="0.1.0",
+    description="Agent lifecycle management — registration, status tracking, heartbeats, and versioning.",
+    lifespan=lifespan,
+    openapi_tags=[{"name": "agents", "description": "Agent CRUD and lifecycle operations"}],
+)
 app.add_middleware(CorrelationIdMiddleware)
 app.include_router(routes.router)
 

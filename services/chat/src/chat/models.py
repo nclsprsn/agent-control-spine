@@ -37,7 +37,7 @@ class Message(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     conversation_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("conversations.id", ondelete="CASCADE"))
-    role: Mapped[MessageRole] = mapped_column(Enum(MessageRole))
+    role: Mapped[MessageRole] = mapped_column(Enum(MessageRole, native_enum=False))
     content: Mapped[str] = mapped_column(Text)
     tool_calls: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
     token_usage: Mapped[dict[str, Any] | None] = mapped_column(JSONB)

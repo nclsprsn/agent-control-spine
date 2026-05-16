@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-echo "Running database migrations..."
-echo "Note: Using init.sql for initial schema. Alembic migrations will be added per-service."
-echo "Done."
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+echo "=== Running Alembic migrations ==="
+
+for svc in registry catalog chat; do
+    echo "--- migrate: ${svc} ---"
+    (cd "$ROOT/services/$svc" && uv run alembic upgrade head)
+done
+
+echo "=== All migrations complete ==="

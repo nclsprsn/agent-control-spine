@@ -1,4 +1,4 @@
-.PHONY: dev down test lint fmt typecheck migrate seed logs clean chat-dev dashboard-dev
+.PHONY: dev down test lint fmt typecheck migrate migrate-gen migrate-stamp seed logs clean chat-dev dashboard-dev
 
 dev:
 	docker compose up --build -d
@@ -28,6 +28,17 @@ typecheck:
 
 migrate:
 	./scripts/migrate.sh
+
+migrate-gen:
+	@read -p "Service (registry/catalog/chat): " svc; \
+	read -p "Message: " msg; \
+	cd services/$$svc && uv run alembic revision --autogenerate -m "$$msg"
+
+migrate-stamp:
+	@for svc in registry catalog chat; do \
+		echo "Stamping $$svc..."; \
+		(cd services/$$svc && uv run alembic stamp head); \
+	done
 
 seed:
 	uv run python scripts/seed.py

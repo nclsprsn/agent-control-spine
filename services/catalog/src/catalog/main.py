@@ -6,7 +6,6 @@ from spine_common.database import create_engine, create_session_factory, get_ses
 from spine_common.health import create_health_router
 from spine_common.logging import setup_logging
 from spine_common.middleware import CorrelationIdMiddleware, setup_telemetry
-from spine_common.models import Base
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from catalog import routes
@@ -20,9 +19,6 @@ settings = CatalogSettings()
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     engine: AsyncEngine = create_engine(settings.database_url)
     factory = create_session_factory(engine)
-
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
 
     async def session_dependency():  # type: ignore[no-untyped-def]
         async for s in get_session(factory):

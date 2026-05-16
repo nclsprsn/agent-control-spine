@@ -66,7 +66,7 @@ async def chat(
     agent_id = data.agent_id or uuid.UUID("00000000-0000-0000-0000-000000000000")
 
     if data.conversation_id:
-        conv = await service.get(data.conversation_id)
+        conv = await service.get(data.conversation_id, user_id=user_id)
         if conv is None:
             raise HTTPException(status_code=404, detail="Conversation not found")
         history = [{"role": m.role.value, "content": m.content} for m in conv.messages]
@@ -131,9 +131,11 @@ async def list_conversations(
 )
 async def get_conversation(
     conversation_id: uuid.UUID,
+    request: Request,
     service: Annotated[ConversationService, Depends(get_service)],
 ) -> ConversationDetailResponse:
-    conv = await service.get(conversation_id)
+    user_id = get_user_id(request)
+    conv = await service.get(conversation_id, user_id=user_id)
     if conv is None:
         raise HTTPException(status_code=404, detail="Conversation not found")
     return ConversationDetailResponse(
@@ -156,7 +158,9 @@ async def get_conversation(
 )
 async def delete_conversation(
     conversation_id: uuid.UUID,
+    request: Request,
     service: Annotated[ConversationService, Depends(get_service)],
 ) -> None:
-    if not await service.delete(conversation_id):
+    user_id = get_user_id(request)
+    if not await service.delete(conversation_id, user_id=user_id):
         raise HTTPException(status_code=404, detail="Conversation not found")

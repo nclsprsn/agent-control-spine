@@ -88,7 +88,7 @@ async def test_chat_creates_conversation(
     assert len(items) >= 1
 
     for conv in items:
-        await authed_client.delete(f"{chat_url}/v1/conversations/{conv['id']}")
+        await authed_client.delete(f"{chat_url}/v1/conversations/{conv['id']}", headers={"x-user-id": user_id})
 
 
 @pytest.mark.integration
@@ -125,7 +125,7 @@ async def test_list_conversations_user_isolation(
 
     convs_a = await authed_client.get(f"{chat_url}/v1/conversations", headers={"x-user-id": user_a})
     for conv in convs_a.json()["items"]:
-        await authed_client.delete(f"{chat_url}/v1/conversations/{conv['id']}")
+        await authed_client.delete(f"{chat_url}/v1/conversations/{conv['id']}", headers={"x-user-id": user_a})
 
 
 @pytest.mark.integration
@@ -147,12 +147,12 @@ async def test_get_conversation_detail(authed_client: httpx.AsyncClient, chat_ur
     convs = await authed_client.get(f"{chat_url}/v1/conversations", headers={"x-user-id": user_id})
     conv_id = convs.json()["items"][0]["id"]
 
-    detail = await authed_client.get(f"{chat_url}/v1/conversations/{conv_id}")
+    detail = await authed_client.get(f"{chat_url}/v1/conversations/{conv_id}", headers={"x-user-id": user_id})
     assert detail.status_code == 200
     assert "messages" in detail.json()
     assert len(detail.json()["messages"]) >= 1
 
-    await authed_client.delete(f"{chat_url}/v1/conversations/{conv_id}")
+    await authed_client.delete(f"{chat_url}/v1/conversations/{conv_id}", headers={"x-user-id": user_id})
 
 
 @pytest.mark.integration
@@ -180,10 +180,10 @@ async def test_delete_conversation(authed_client: httpx.AsyncClient, chat_url: s
     convs = await authed_client.get(f"{chat_url}/v1/conversations", headers={"x-user-id": user_id})
     conv_id = convs.json()["items"][0]["id"]
 
-    del_resp = await authed_client.delete(f"{chat_url}/v1/conversations/{conv_id}")
+    del_resp = await authed_client.delete(f"{chat_url}/v1/conversations/{conv_id}", headers={"x-user-id": user_id})
     assert del_resp.status_code == 204
 
-    get_resp = await authed_client.get(f"{chat_url}/v1/conversations/{conv_id}")
+    get_resp = await authed_client.get(f"{chat_url}/v1/conversations/{conv_id}", headers={"x-user-id": user_id})
     assert get_resp.status_code == 404
 
 
@@ -191,6 +191,41 @@ async def test_delete_conversation(authed_client: httpx.AsyncClient, chat_url: s
 async def test_delete_conversation_not_found(authed_client: httpx.AsyncClient, chat_url: str, require_stack):
     resp = await authed_client.delete(f"{chat_url}/v1/conversations/{uuid.uuid4()}")
     assert resp.status_code == 404
+
+
+@pytest.mark.integration
+async def test_conversation_ownership_enforced(
+    authed_client: httpx.AsyncClient, chat_url: str, auth_token: str, require_stack
+):
+    user_a = f"owner-a-{uuid.uuid4().hex[:8]}"
+    user_b = f"owner-b-{uuid.uuid4().hex[:8]}"
+
+    headers_a = {"Authorization": f"Bearer {auth_token}", "x-user-id": user_a}
+    async with (
+        httpx.AsyncClient(timeout=30.0) as stream_client,
+        stream_client.stream(
+            "POST",
+            f"{chat_url}/v1/chat",
+            json={"message": "owner-only"},
+            headers=headers_a,
+        ) as resp,
+    ):
+        async for _ in resp.aiter_lines():
+            pass
+
+    convs_a = await authed_client.get(f"{chat_url}/v1/conversations", headers={"x-user-id": user_a})
+    conv_id = convs_a.json()["items"][0]["id"]
+
+    get_b = await authed_client.get(f"{chat_url}/v1/conversations/{conv_id}", headers={"x-user-id": user_b})
+    assert get_b.status_code == 404
+
+    del_b = await authed_client.delete(f"{chat_url}/v1/conversations/{conv_id}", headers={"x-user-id": user_b})
+    assert del_b.status_code == 404
+
+    still_there = await authed_client.get(f"{chat_url}/v1/conversations/{conv_id}", headers={"x-user-id": user_a})
+    assert still_there.status_code == 200
+
+    await authed_client.delete(f"{chat_url}/v1/conversations/{conv_id}", headers={"x-user-id": user_a})
 
 
 @pytest.mark.integration

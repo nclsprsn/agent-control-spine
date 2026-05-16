@@ -18,10 +18,12 @@ class ConversationService:
         await self.session.flush()
         return conv
 
-    async def get(self, conversation_id: uuid.UUID) -> Conversation | None:
+    async def get(self, conversation_id: uuid.UUID, user_id: str | None = None) -> Conversation | None:
         query = (
             select(Conversation).where(Conversation.id == conversation_id).options(selectinload(Conversation.messages))
         )
+        if user_id is not None:
+            query = query.where(Conversation.user_id == user_id)
         result = await self.session.execute(query)
         return result.scalar_one_or_none()
 
@@ -49,9 +51,11 @@ class ConversationService:
         rows: list[tuple[Conversation, int]] = [(row[0], row[1]) for row in result.all()]
         return rows, total
 
-    async def delete(self, conversation_id: uuid.UUID) -> bool:
+    async def delete(self, conversation_id: uuid.UUID, user_id: str | None = None) -> bool:
         conv = await self.session.get(Conversation, conversation_id)
         if conv is None:
+            return False
+        if user_id is not None and conv.user_id != user_id:
             return False
         await self.session.delete(conv)
         await self.session.flush()

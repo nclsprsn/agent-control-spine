@@ -77,11 +77,11 @@ async def test_chat_conversation_flow(
     assert len(items) >= 1
     conv_id = items[0]["id"]
 
-    detail = await authed_client.get(f"{gateway_url}/v1/conversations/{conv_id}")
+    detail = await authed_client.get(f"{gateway_url}/v1/conversations/{conv_id}", headers={"x-user-id": user_id})
     assert detail.status_code == 200
     assert len(detail.json()["messages"]) >= 1
 
-    delete = await authed_client.delete(f"{gateway_url}/v1/conversations/{conv_id}")
+    delete = await authed_client.delete(f"{gateway_url}/v1/conversations/{conv_id}", headers={"x-user-id": user_id})
     assert delete.status_code == 204
 
 

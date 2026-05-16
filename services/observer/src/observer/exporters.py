@@ -18,6 +18,9 @@ class NATSExporter:
         payload = json.dumps(data).encode()
         await self._nc.publish(subject, payload)
 
+    def is_connected(self) -> bool:
+        return self._nc is not None and self._nc.is_connected
+
     async def close(self) -> None:
         if self._nc is not None:
             await self._nc.drain()

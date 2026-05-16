@@ -205,6 +205,31 @@ async def test_list_tools(authed_client: httpx.AsyncClient, catalog_url: str, re
 
 
 @pytest.mark.integration
+async def test_list_tools_pagination(authed_client: httpx.AsyncClient, catalog_url: str, require_stack):
+    resp = await authed_client.get(f"{catalog_url}/v1/catalog/tools?page=1&page_size=2")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["page"] == 1
+    assert body["page_size"] == 2
+    assert len(body["items"]) <= 2
+
+
+@pytest.mark.integration
+async def test_list_tools_filter_tags(
+    authed_client: httpx.AsyncClient, catalog_url: str, test_tool_data: dict, require_stack
+):
+    create = await authed_client.post(f"{catalog_url}/v1/catalog/tools", json=test_tool_data)
+    tool_id = create.json()["id"]
+
+    resp = await authed_client.get(f"{catalog_url}/v1/catalog/tools?tags=integration")
+    assert resp.status_code == 200
+    items = resp.json()["items"]
+    assert any(tool_id == item["id"] for item in items)
+
+    await authed_client.delete(f"{catalog_url}/v1/catalog/tools/{tool_id}")
+
+
+@pytest.mark.integration
 async def test_update_tool(authed_client: httpx.AsyncClient, catalog_url: str, test_tool_data: dict, require_stack):
     create = await authed_client.post(f"{catalog_url}/v1/catalog/tools", json=test_tool_data)
     tool_id = create.json()["id"]
@@ -270,6 +295,32 @@ async def test_search_no_results(authed_client: httpx.AsyncClient, catalog_url: 
 async def test_search_requires_query(authed_client: httpx.AsyncClient, catalog_url: str, require_stack):
     resp = await authed_client.get(f"{catalog_url}/v1/catalog/search")
     assert resp.status_code == 422
+
+
+@pytest.mark.integration
+async def test_search_combines_query_and_tags(authed_client: httpx.AsyncClient, catalog_url: str, require_stack):
+    suffix = uuid.uuid4().hex[:8]
+    term = f"phlebotinum{suffix}"
+    keeper = await authed_client.post(
+        f"{catalog_url}/v1/catalog/capabilities",
+        json={"name": f"{term}-keeper", "description": "match", "tags": [f"keep-{suffix}"]},
+    )
+    skipper = await authed_client.post(
+        f"{catalog_url}/v1/catalog/capabilities",
+        json={"name": f"{term}-skipper", "description": "match", "tags": [f"skip-{suffix}"]},
+    )
+    keeper_id = keeper.json()["id"]
+    skipper_id = skipper.json()["id"]
+
+    try:
+        resp = await authed_client.get(f"{catalog_url}/v1/catalog/search?q={term}&tags=keep-{suffix}")
+        assert resp.status_code == 200
+        ids = [c["id"] for c in resp.json()["capabilities"]]
+        assert keeper_id in ids
+        assert skipper_id not in ids
+    finally:
+        await authed_client.delete(f"{catalog_url}/v1/catalog/capabilities/{keeper_id}")
+        await authed_client.delete(f"{catalog_url}/v1/catalog/capabilities/{skipper_id}")
 
 
 @pytest.mark.integration

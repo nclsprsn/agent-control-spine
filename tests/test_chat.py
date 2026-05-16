@@ -101,6 +101,40 @@ async def test_list_conversations(authed_client: httpx.AsyncClient, chat_url: st
 
 
 @pytest.mark.integration
+async def test_list_conversations_pagination(
+    authed_client: httpx.AsyncClient, chat_url: str, auth_token: str, require_stack
+):
+    user_id = f"page-user-{uuid.uuid4().hex[:8]}"
+    headers = {"Authorization": f"Bearer {auth_token}", "x-user-id": user_id}
+    for body in ("one", "two", "three"):
+        async with (
+            httpx.AsyncClient(timeout=30.0) as stream_client,
+            stream_client.stream("POST", f"{chat_url}/v1/chat", json={"message": body}, headers=headers) as resp,
+        ):
+            async for _ in resp.aiter_lines():
+                pass
+
+    page1 = await authed_client.get(f"{chat_url}/v1/conversations?page=1&page_size=2", headers={"x-user-id": user_id})
+    body1 = page1.json()
+    assert body1["page"] == 1
+    assert body1["page_size"] == 2
+    assert len(body1["items"]) == 2
+    assert body1["total"] >= 3
+
+    page2 = await authed_client.get(f"{chat_url}/v1/conversations?page=2&page_size=2", headers={"x-user-id": user_id})
+    body2 = page2.json()
+    assert body2["page"] == 2
+    assert len(body2["items"]) >= 1
+
+    page1_ids = {c["id"] for c in body1["items"]}
+    page2_ids = {c["id"] for c in body2["items"]}
+    assert page1_ids.isdisjoint(page2_ids)
+
+    for conv in body1["items"] + body2["items"]:
+        await authed_client.delete(f"{chat_url}/v1/conversations/{conv['id']}", headers={"x-user-id": user_id})
+
+
+@pytest.mark.integration
 async def test_list_conversations_user_isolation(
     authed_client: httpx.AsyncClient, chat_url: str, auth_token: str, require_stack
 ):

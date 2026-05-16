@@ -176,6 +176,26 @@ async def test_update_agent_not_found(authed_client: httpx.AsyncClient, registry
 
 
 @pytest.mark.integration
+async def test_update_agent_status_transitions(
+    authed_client: httpx.AsyncClient, registry_url: str, test_agent_data: dict, require_stack
+):
+    create = await authed_client.post(f"{registry_url}/v1/agents/", json=test_agent_data)
+    agent_id = create.json()["id"]
+    assert create.json()["status"] == "registered"
+
+    try:
+        for target in ("active", "suspended", "deprecated", "terminated"):
+            resp = await authed_client.patch(
+                f"{registry_url}/v1/agents/{agent_id}",
+                json={"status": target},
+            )
+            assert resp.status_code == 200
+            assert resp.json()["status"] == target
+    finally:
+        await authed_client.delete(f"{registry_url}/v1/agents/{agent_id}")
+
+
+@pytest.mark.integration
 async def test_delete_agent(authed_client: httpx.AsyncClient, registry_url: str, test_agent_data: dict, require_stack):
     create = await authed_client.post(f"{registry_url}/v1/agents/", json=test_agent_data)
     agent_id = create.json()["id"]

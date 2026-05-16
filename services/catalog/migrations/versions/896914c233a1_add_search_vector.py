@@ -41,20 +41,33 @@ BACKFILL_EXPR = (
 
 def upgrade() -> None:
     op.execute(TRIGGER_FN)
-    for table in ("capabilities", "tools"):
-        op.execute(f"ALTER TABLE {table} ADD COLUMN search_vector tsvector")
-        op.execute(
-            f"CREATE TRIGGER {table}_search_vector_trg "
-            f"BEFORE INSERT OR UPDATE OF name, description, tags ON {table} "
-            f"FOR EACH ROW EXECUTE FUNCTION catalog_search_vector_update()"
-        )
-        op.execute(f"UPDATE {table} SET search_vector = {BACKFILL_EXPR}")
-        op.execute(f"CREATE INDEX ix_{table}_search_vector ON {table} USING gin (search_vector)")
+
+    op.execute("ALTER TABLE capabilities ADD COLUMN search_vector tsvector")
+    op.execute(
+        "CREATE TRIGGER capabilities_search_vector_trg "
+        "BEFORE INSERT OR UPDATE OF name, description, tags ON capabilities "
+        "FOR EACH ROW EXECUTE FUNCTION catalog_search_vector_update()"
+    )
+    op.execute(f"UPDATE capabilities SET search_vector = {BACKFILL_EXPR}")
+    op.execute("CREATE INDEX ix_capabilities_search_vector ON capabilities USING gin (search_vector)")
+
+    op.execute("ALTER TABLE tools ADD COLUMN search_vector tsvector")
+    op.execute(
+        "CREATE TRIGGER tools_search_vector_trg "
+        "BEFORE INSERT OR UPDATE OF name, description, tags ON tools "
+        "FOR EACH ROW EXECUTE FUNCTION catalog_search_vector_update()"
+    )
+    op.execute(f"UPDATE tools SET search_vector = {BACKFILL_EXPR}")
+    op.execute("CREATE INDEX ix_tools_search_vector ON tools USING gin (search_vector)")
 
 
 def downgrade() -> None:
-    for table in ("tools", "capabilities"):
-        op.execute(f"DROP INDEX IF EXISTS ix_{table}_search_vector")
-        op.execute(f"DROP TRIGGER IF EXISTS {table}_search_vector_trg ON {table}")
-        op.execute(f"ALTER TABLE {table} DROP COLUMN IF EXISTS search_vector")
+    op.execute("DROP INDEX IF EXISTS ix_tools_search_vector")
+    op.execute("DROP TRIGGER IF EXISTS tools_search_vector_trg ON tools")
+    op.execute("ALTER TABLE tools DROP COLUMN IF EXISTS search_vector")
+
+    op.execute("DROP INDEX IF EXISTS ix_capabilities_search_vector")
+    op.execute("DROP TRIGGER IF EXISTS capabilities_search_vector_trg ON capabilities")
+    op.execute("ALTER TABLE capabilities DROP COLUMN IF EXISTS search_vector")
+
     op.execute("DROP FUNCTION IF EXISTS catalog_search_vector_update()")

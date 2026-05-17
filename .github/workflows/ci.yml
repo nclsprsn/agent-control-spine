@@ -136,7 +136,6 @@ jobs:
         env:
           COMPOSE_PROJECT_NAME: spine
         run: |
-          mkdir -p trivy-image-results
           docker compose build registry catalog observer chat dashboard chat-app
 
       - name: Scan registry image
@@ -147,7 +146,14 @@ jobs:
           severity: CRITICAL,HIGH
           ignore-unfixed: true
           format: sarif
-          output: trivy-image-results/registry.sarif
+          output: trivy-registry.sarif
+
+      - name: Upload registry scan
+        if: always()
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy-registry.sarif
+          category: trivy-image-registry
 
       - name: Scan catalog image
         uses: aquasecurity/trivy-action@v0.36.0
@@ -157,7 +163,14 @@ jobs:
           severity: CRITICAL,HIGH
           ignore-unfixed: true
           format: sarif
-          output: trivy-image-results/catalog.sarif
+          output: trivy-catalog.sarif
+
+      - name: Upload catalog scan
+        if: always()
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy-catalog.sarif
+          category: trivy-image-catalog
 
       - name: Scan observer image
         uses: aquasecurity/trivy-action@v0.36.0
@@ -167,7 +180,14 @@ jobs:
           severity: CRITICAL,HIGH
           ignore-unfixed: true
           format: sarif
-          output: trivy-image-results/observer.sarif
+          output: trivy-observer.sarif
+
+      - name: Upload observer scan
+        if: always()
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy-observer.sarif
+          category: trivy-image-observer
 
       - name: Scan chat image
         uses: aquasecurity/trivy-action@v0.36.0
@@ -177,11 +197,11 @@ jobs:
           severity: CRITICAL,HIGH
           ignore-unfixed: true
           format: sarif
-          output: trivy-image-results/chat.sarif
+          output: trivy-chat.sarif
 
-      - name: Upload image scan results
+      - name: Upload chat scan
         if: always()
         uses: github/codeql-action/upload-sarif@v4
         with:
-          sarif_file: trivy-image-results/
-          category: trivy-images
+          sarif_file: trivy-chat.sarif
+          category: trivy-image-chat

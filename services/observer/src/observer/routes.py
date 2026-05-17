@@ -1,9 +1,10 @@
 import uuid
 from datetime import datetime
-from typing import Any
+from typing import Annotated, Any
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel, Field
+from spine_common.auth import Principal, require_user
 
 router = APIRouter(prefix="/v1", tags=["observer"])
 
@@ -30,9 +31,14 @@ class TraceData(BaseModel):
     summary="Ingest event",
     description="Accept an agent event and forward to NATS for downstream processing. Returns 202 immediately.",
 )
-async def ingest_event(event: AgentEvent, request: Request) -> dict[str, Any]:
+async def ingest_event(
+    event: AgentEvent,
+    request: Request,
+    principal: Annotated[Principal, Depends(require_user)],
+) -> dict[str, Any]:
     exporter = request.app.state.nats_exporter
-    await exporter.publish(f"spine.events.{event.event_type}", event.model_dump(mode="json"))
+    payload = event.model_dump(mode="json") | {"user_id": principal.sub}
+    await exporter.publish(f"spine.events.{event.event_type}", payload)
     return {"status": "accepted"}
 
 
@@ -42,7 +48,12 @@ async def ingest_event(event: AgentEvent, request: Request) -> dict[str, Any]:
     summary="Ingest traces",
     description="Accept OpenTelemetry-compatible trace data and forward to NATS/OTel collector.",
 )
-async def ingest_traces(traces: TraceData, request: Request) -> dict[str, Any]:
+async def ingest_traces(
+    traces: TraceData,
+    request: Request,
+    principal: Annotated[Principal, Depends(require_user)],
+) -> dict[str, Any]:
     exporter = request.app.state.nats_exporter
-    await exporter.publish("spine.traces", traces.model_dump(mode="json"))
+    payload = traces.model_dump(mode="json") | {"user_id": principal.sub}
+    await exporter.publish("spine.traces", payload)
     return {"status": "accepted"}

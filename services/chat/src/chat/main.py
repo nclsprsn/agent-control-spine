@@ -1,8 +1,9 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from spine_common.auth import JWKSCache, install_auth, require_user
 from spine_common.database import create_engine, create_session_factory, get_session
 from spine_common.health import create_health_router
 from spine_common.logging import setup_logging
@@ -31,6 +32,13 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.dependency_overrides[routes.get_session] = session_dependency
     app.state.session_factory = factory
 
+    jwks: JWKSCache | None = install_auth(
+        app,
+        jwks_url=settings.keycloak_jwks_url,
+        issuer=settings.keycloak_issuer,
+        disabled=settings.auth_disabled,
+    )
+
     init_langfuse(settings)
 
     orchestrator = AgentOrchestrator(
@@ -46,6 +54,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     langfuse_shutdown()
     await orchestrator.close()
+    if jwks:
+        await jwks.close()
     await engine.dispose()
 
 
@@ -64,7 +74,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.add_middleware(CorrelationIdMiddleware)
-app.include_router(routes.router)
+app.include_router(routes.router, dependencies=[Depends(require_user)])
 
 setup_logging(settings.log_level, settings.otel_service_name)
 setup_telemetry(app, settings.otel_service_name)

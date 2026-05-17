@@ -1,10 +1,10 @@
 import json
 import uuid
-from base64 import urlsafe_b64decode
 from collections.abc import AsyncIterator
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from spine_common.auth import Principal, require_user
 from spine_common.schemas import PaginatedResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sse_starlette.sse import EventSourceResponse
@@ -30,21 +30,6 @@ def get_service(session: Annotated[AsyncSession, Depends(get_session)]) -> Conve
     return ConversationService(session)
 
 
-def get_user_id(request: Request) -> str:
-    if user_id := request.headers.get("x-user-id"):
-        return user_id
-    auth_header = request.headers.get("authorization", "")
-    if auth_header.startswith("Bearer "):
-        try:
-            payload = auth_header[7:].split(".")[1]
-            padding = "=" * (4 - len(payload) % 4)
-            claims = json.loads(urlsafe_b64decode(payload + padding))
-            return claims.get("sub") or claims.get("preferred_username") or "anonymous"
-        except IndexError, ValueError, json.JSONDecodeError:
-            pass
-    return "anonymous"
-
-
 @router.post(
     "/chat",
     summary="Stream chat",
@@ -58,8 +43,9 @@ async def chat(
     data: ChatRequest,
     request: Request,
     service: Annotated[ConversationService, Depends(get_service)],
+    principal: Annotated[Principal, Depends(require_user)],
 ) -> EventSourceResponse:
-    user_id = get_user_id(request)
+    user_id = principal.sub
     orchestrator: AgentOrchestrator = request.app.state.orchestrator
     session_factory = request.app.state.session_factory
 
@@ -104,10 +90,11 @@ async def chat(
 async def list_conversations(
     request: Request,
     service: Annotated[ConversationService, Depends(get_service)],
+    principal: Annotated[Principal, Depends(require_user)],
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
 ) -> PaginatedResponse[ConversationResponse]:
-    user_id = get_user_id(request)
+    user_id = principal.sub
     rows, total = await service.list_for_user(user_id, page=page, page_size=page_size)
     items = []
     for conv, msg_count in rows:
@@ -133,8 +120,9 @@ async def get_conversation(
     conversation_id: uuid.UUID,
     request: Request,
     service: Annotated[ConversationService, Depends(get_service)],
+    principal: Annotated[Principal, Depends(require_user)],
 ) -> ConversationDetailResponse:
-    user_id = get_user_id(request)
+    user_id = principal.sub
     conv = await service.get(conversation_id, user_id=user_id)
     if conv is None:
         raise HTTPException(status_code=404, detail="Conversation not found")
@@ -160,7 +148,8 @@ async def delete_conversation(
     conversation_id: uuid.UUID,
     request: Request,
     service: Annotated[ConversationService, Depends(get_service)],
+    principal: Annotated[Principal, Depends(require_user)],
 ) -> None:
-    user_id = get_user_id(request)
+    user_id = principal.sub
     if not await service.delete(conversation_id, user_id=user_id):
         raise HTTPException(status_code=404, detail="Conversation not found")

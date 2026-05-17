@@ -10,5 +10,8 @@ class SpineSettings(BaseSettings):
     log_level: str = "INFO"
     host: str = "0.0.0.0"
     port: int = 8080
+    keycloak_jwks_url: str = "http://keycloak:8443/realms/spine/protocol/openid-connect/certs"
+    keycloak_issuer: str = "http://localhost:8443/realms/spine"
+    auth_disabled: bool = False
 
     model_config = {"env_prefix": "", "case_sensitive": False}

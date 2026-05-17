@@ -168,6 +168,9 @@ services:
       REDIS_URL: redis://redis:6379/0
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
       LOG_LEVEL: INFO
+      KEYCLOAK_JWKS_URL: http://keycloak:8443/realms/spine/protocol/openid-connect/certs
+      KEYCLOAK_ISSUER: http://localhost:8443/realms/spine
+      AUTH_DISABLED: ${AUTH_DISABLED:-false}
     depends_on:
       postgres:
         condition: service_healthy
@@ -191,6 +194,9 @@ services:
       REDIS_URL: redis://redis:6379/0
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
       LOG_LEVEL: INFO
+      KEYCLOAK_JWKS_URL: http://keycloak:8443/realms/spine/protocol/openid-connect/certs
+      KEYCLOAK_ISSUER: http://localhost:8443/realms/spine
+      AUTH_DISABLED: ${AUTH_DISABLED:-false}
     depends_on:
       postgres:
         condition: service_healthy
@@ -213,6 +219,9 @@ services:
       NATS_URL: nats://nats:4222
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
       LOG_LEVEL: INFO
+      KEYCLOAK_JWKS_URL: http://keycloak:8443/realms/spine/protocol/openid-connect/certs
+      KEYCLOAK_ISSUER: http://localhost:8443/realms/spine
+      AUTH_DISABLED: ${AUTH_DISABLED:-false}
     depends_on:
       nats:
         condition: service_healthy
@@ -257,6 +266,9 @@ services:
       LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-}
       LANGFUSE_HOST: http://langfuse:3000
       LANGFUSE_ENABLED: "true"
+      KEYCLOAK_JWKS_URL: http://keycloak:8443/realms/spine/protocol/openid-connect/certs
+      KEYCLOAK_ISSUER: http://localhost:8443/realms/spine
+      AUTH_DISABLED: ${AUTH_DISABLED:-false}
     depends_on:
       postgres:
         condition: service_healthy

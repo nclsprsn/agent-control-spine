@@ -37,6 +37,9 @@ jobs:
     name: Filesystem vulnerability scan
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: read
+      security-events: write
     steps:
       - uses: actions/checkout@v6
 
@@ -49,6 +52,15 @@ jobs:
           exit-code: "1"
           ignore-unfixed: true
           skip-dirs: node_modules,.venv,.next
+          format: sarif
+          output: trivy-fs.sarif
+
+      - name: Upload Trivy SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy-fs.sarif
+          category: trivy-fs
 
   pip-audit:
     name: Python dependency audit
@@ -64,7 +76,7 @@ jobs:
           cache-dependency-glob: "uv.lock"
 
       - name: Export requirements
-        run: uv export --format requirements.txt --no-hashes --no-emit-workspace --all-packages -o requirements.txt
+        run: uv export --format requirements.txt --no-emit-workspace --all-packages -o requirements.txt
 
       - name: pip-audit
         uses: pypa/gh-action-pip-audit@v1.1.0

@@ -2737,6 +2737,7 @@ source = { editable = "libs/spine-common" }
 dependencies = [
     { name = "asyncpg" },
     { name = "fastapi" },
+    { name = "httpx" },
     { name = "opentelemetry-api" },
     { name = "opentelemetry-instrumentation-fastapi" },
     { name = "opentelemetry-instrumentation-sqlalchemy" },
@@ -2753,6 +2754,7 @@ dependencies = [
 requires-dist = [
     { name = "asyncpg", specifier = ">=0.30" },
     { name = "fastapi", specifier = ">=0.136" },
+    { name = "httpx", specifier = ">=0.28" },
     { name = "opentelemetry-api", specifier = ">=1.33" },
     { name = "opentelemetry-instrumentation-fastapi", specifier = ">=0.52b0" },
     { name = "opentelemetry-instrumentation-sqlalchemy", specifier = ">=0.52b0" },

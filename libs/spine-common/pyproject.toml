@@ -16,6 +16,7 @@ dependencies = [
     "opentelemetry-instrumentation-fastapi>=0.52b0",
     "opentelemetry-instrumentation-sqlalchemy>=0.52b0",
     "python-jose[cryptography]>=3.4",
+    "httpx>=0.28",
 ]
 
 [build-system]

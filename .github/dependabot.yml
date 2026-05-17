@@ -4,7 +4,10 @@ updates:
     directory: "/"
     schedule:
       interval: weekly
+      day: monday
     open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(ci)"
     groups:
       actions:
         patterns: ["*"]
@@ -13,7 +16,10 @@ updates:
     directory: "/"
     schedule:
       interval: weekly
+      day: monday
     open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
     groups:
       python-minor:
         update-types: ["minor", "patch"]
@@ -22,7 +28,10 @@ updates:
     directory: "/apps/dashboard"
     schedule:
       interval: weekly
+      day: monday
     open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
     groups:
       npm-minor:
         update-types: ["minor", "patch"]
@@ -31,32 +40,29 @@ updates:
     directory: "/apps/chat"
     schedule:
       interval: weekly
+      day: monday
     open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
     groups:
       npm-minor:
         update-types: ["minor", "patch"]
 
   - package-ecosystem: docker
-    directory: "/services/registry"
+    directories:
+      - "/"
+      - "/services/registry"
+      - "/services/catalog"
+      - "/services/chat"
+      - "/services/observer"
+      - "/apps/dashboard"
+      - "/apps/chat"
     schedule:
       interval: weekly
-  - package-ecosystem: docker
-    directory: "/services/catalog"
-    schedule:
-      interval: weekly
-  - package-ecosystem: docker
-    directory: "/services/chat"
-    schedule:
-      interval: weekly
-  - package-ecosystem: docker
-    directory: "/services/observer"
-    schedule:
-      interval: weekly
-  - package-ecosystem: docker
-    directory: "/apps/dashboard"
-    schedule:
-      interval: weekly
-  - package-ecosystem: docker
-    directory: "/apps/chat"
-    schedule:
-      interval: weekly
+      day: monday
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: "chore(docker)"
+    groups:
+      docker-images:
+        patterns: ["*"]

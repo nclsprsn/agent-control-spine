@@ -1,18 +1,16 @@
 """Unit tests for spine_common.auth JWT verification logic."""
 
 import time
-from typing import Any
+from typing import Annotated, Any
 
 import pytest
+from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
+from fastapi import Depends, FastAPI
 from jose import JWTError, jwk, jwt
 from spine_common.auth import JWKSCache, Principal, install_auth, require_user
 from starlette.testclient import TestClient
-
-from fastapi import Depends, FastAPI
-from typing import Annotated
-
 
 TEST_ISSUER = "http://test-issuer/realms/test"
 TEST_KID = "test-key-1"
@@ -21,13 +19,6 @@ TEST_KID = "test-key-1"
 def make_rsa_key() -> tuple[RSAPrivateKey, dict[str, Any]]:
     """Generate RSA key pair and return (private_key, JWK public key dict)."""
     private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-    from cryptography.hazmat.primitives import serialization
-
-    private_pem = private_key.private_bytes(
-        serialization.Encoding.PEM,
-        serialization.PrivateFormat.TraditionalOpenSSL,
-        serialization.NoEncryption(),
-    )
     public_pem = private_key.public_key().public_bytes(
         serialization.Encoding.PEM,
         serialization.PublicFormat.SubjectPublicKeyInfo,
@@ -43,8 +34,6 @@ def sign_token(
     claims: dict[str, Any],
     kid: str = TEST_KID,
 ) -> str:
-    from cryptography.hazmat.primitives import serialization
-
     private_pem = private_key.private_bytes(
         serialization.Encoding.PEM,
         serialization.PrivateFormat.TraditionalOpenSSL,
@@ -119,9 +108,9 @@ async def test_verify_wrong_issuer() -> None:
 @pytest.mark.asyncio
 async def test_verify_wrong_signature() -> None:
     private_key, jwk_pub = make_rsa_key()
-    other_key, _ = make_rsa_key()  # Different key
+    other_key, _ = make_rsa_key()
     cache = make_cache(private_key, jwk_pub)
-    token = sign_token(other_key, valid_claims())  # Signed with wrong key
+    token = sign_token(other_key, valid_claims())
 
     with pytest.raises(JWTError):
         await cache.verify(token)
@@ -171,7 +160,7 @@ def test_require_user_disabled_returns_anonymous() -> None:
 
 
 def test_require_user_missing_token_returns_401() -> None:
-    private_key, jwk_pub = make_rsa_key()
+    _, jwk_pub = make_rsa_key()
 
     app = FastAPI()
     jwks = install_auth(app, jwks_url="http://x", issuer=TEST_ISSUER, disabled=False)

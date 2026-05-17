@@ -22,7 +22,7 @@ class AgentOrchestrator:
             if resp.status_code == 200:
                 return resp.json()  # type: ignore[no-any-return]
         except httpx.HTTPError:
-            pass
+            return None
         return None
 
     async def stream_response(

@@ -303,6 +303,11 @@ services:
       KEYCLOAK_REALM: spine
       KEYCLOAK_CLIENT_ID: spine-services
       KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET_SERVICES:-change-me-in-production}
+      REGISTRY_URL: http://registry:8081
+      CATALOG_URL: http://catalog:8082
+      OBSERVER_URL: http://observer:8083
+      CHAT_URL: http://chat:8084
+      PROMETHEUS_URL: http://prometheus:9090
     depends_on:
       agentgateway:
         condition: service_started

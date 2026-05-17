@@ -1,5 +1,0 @@
-# CVE-2026-41305 — postcss XSS (moderate severity) via nested postcss<8.5.10 in next.js.
-# Fix requires next@9.3.3 which is a breaking major-version change.
-# Track at: https://github.com/nclsprsn/agent-control-spine/issues
-# Remove this entry when next.js ships a semver-compatible patch.
-CVE-2026-41305

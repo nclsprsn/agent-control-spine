@@ -51,7 +51,7 @@ make dev
 curl http://localhost:8081/healthz    # Registry
 curl http://localhost:8082/healthz    # Catalog
 curl http://localhost:8084/healthz    # Chat
-open http://localhost:3001            # Dashboard
+open http://localhost:3001            # Dashboard (sign in: admin/admin, operator/operator, viewer/viewer)
 open http://localhost:3002            # Chat App
 open http://localhost:3000            # Grafana
 open http://localhost:8443            # Keycloak Admin

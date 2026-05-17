@@ -12,7 +12,8 @@
       "catalog": "Catalog",
       "observability": "Observability",
       "gateway": "Gateway"
-    }
+    },
+    "signOut": "Sign out"
   },
   "home": {
     "title": "Dashboard",

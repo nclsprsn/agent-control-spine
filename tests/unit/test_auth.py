@@ -54,13 +54,13 @@ def make_cache(private_key: RSAPrivateKey, jwk_pub: dict[str, Any]) -> JWKSCache
     return cache
 
 
-def valid_claims(exp_offset: int = 3600) -> dict[str, Any]:
+def valid_claims(exp_offset: int = 3600, roles: list[str] | None = None) -> dict[str, Any]:
     now = int(time.time())
     return {
         "sub": "user-123",
         "iss": TEST_ISSUER,
         "preferred_username": "alice",
-        "realm_access": {"roles": ["user"]},
+        "realm_access": {"roles": roles if roles is not None else ["user"]},
         "iat": now,
         "exp": now + exp_offset,
     }

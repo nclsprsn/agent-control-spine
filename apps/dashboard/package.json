@@ -12,6 +12,7 @@
     "@formatjs/intl-localematcher": "^0.8.8",
     "negotiator": "^1.0.0",
     "next": "16.2.6",
+    "next-auth": "^5.0.0-beta.31",
     "react": "19.2.6",
     "react-dom": "19.2.6"
   },

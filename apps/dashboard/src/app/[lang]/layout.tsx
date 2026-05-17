@@ -4,6 +4,7 @@ import { Sidebar } from "@/components/layout/sidebar";
 import { getDictionary } from "./dictionaries";
 import { locales } from "@/proxy";
 import type { Locale } from "@/proxy";
+import { auth, signOut } from "@/auth";
 
 export async function generateMetadata({
   params,
@@ -29,11 +30,24 @@ export default async function LangLayout({
   const { lang } = await params;
   if (!locales.includes(lang as Locale)) notFound();
 
-  const dict = await getDictionary(lang as Locale);
+  const [dict, session] = await Promise.all([
+    getDictionary(lang as Locale),
+    auth(),
+  ]);
+
+  async function handleSignOut() {
+    "use server";
+    await signOut({ redirectTo: "/" });
+  }
 
   return (
     <>
-      <Sidebar locale={lang as Locale} t={dict.sidebar} />
+      <Sidebar
+        locale={lang as Locale}
+        t={dict.sidebar}
+        userName={session?.user?.name ?? null}
+        signOutAction={handleSignOut}
+      />
       <main className="flex-1 p-8">{children}</main>
     </>
   );

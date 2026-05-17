@@ -53,6 +53,12 @@
       "directAccessGrantsEnabled": true
     }
   ],
+  "scopeMappings": [
+    {
+      "client": "spine-services",
+      "roles": ["admin"]
+    }
+  ],
   "users": [
     {
       "username": "admin",
@@ -68,6 +74,36 @@
         }
       ],
       "realmRoles": ["admin"]
+    },
+    {
+      "username": "operator",
+      "enabled": true,
+      "email": "operator@spine.local",
+      "firstName": "Spine",
+      "lastName": "Operator",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "operator",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["operator"]
+    },
+    {
+      "username": "viewer",
+      "enabled": true,
+      "email": "viewer@spine.local",
+      "firstName": "Spine",
+      "lastName": "Viewer",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "viewer",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["viewer"]
     }
   ]
 }

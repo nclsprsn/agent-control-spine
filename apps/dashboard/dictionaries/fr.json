@@ -12,7 +12,8 @@
       "catalog": "Catalogue",
       "observability": "Observabilité",
       "gateway": "Passerelle"
-    }
+    },
+    "signOut": "Déconnexion"
   },
   "home": {
     "title": "Tableau de bord",

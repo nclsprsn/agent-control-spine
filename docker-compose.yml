@@ -299,10 +299,12 @@ services:
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:8080
       INTERNAL_API_URL: http://agentgateway:8080
-      KEYCLOAK_URL: http://keycloak:8443
-      KEYCLOAK_REALM: spine
-      KEYCLOAK_CLIENT_ID: spine-services
-      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET_SERVICES:-change-me-in-production}
+      AUTH_SECRET: ${AUTH_SECRET_DASHBOARD:-dev-dashboard-secret-change-in-production}
+      AUTH_KEYCLOAK_ID: spine-dashboard
+      AUTH_KEYCLOAK_SECRET: ${AUTH_KEYCLOAK_SECRET_DASHBOARD:-spine-dashboard-secret}
+      AUTH_KEYCLOAK_ISSUER: http://keycloak:8443/realms/spine
+      AUTH_TRUST_HOST: "true"
+      AUTH_URL: http://localhost:3001
       REGISTRY_URL: http://registry:8081
       CATALOG_URL: http://catalog:8082
       OBSERVER_URL: http://observer:8083

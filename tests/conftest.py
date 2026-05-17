@@ -41,6 +41,22 @@ def keycloak_url():
     return "http://localhost:8443"
 
 
+async def _password_token(keycloak_url: str, username: str, password: str) -> str:
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(
+            f"{keycloak_url}/realms/spine/protocol/openid-connect/token",
+            data={
+                "grant_type": "password",
+                "client_id": "spine-services",
+                "client_secret": "change-me-in-production",
+                "username": username,
+                "password": password,
+            },
+        )
+        resp.raise_for_status()
+        return resp.json()["access_token"]
+
+
 @pytest.fixture(scope="session")
 async def auth_token(keycloak_url: str) -> str:
     async with httpx.AsyncClient() as client:
@@ -54,6 +70,21 @@ async def auth_token(keycloak_url: str) -> str:
         )
         resp.raise_for_status()
         return resp.json()["access_token"]
+
+
+@pytest.fixture(scope="session")
+async def admin_token(keycloak_url: str) -> str:
+    return await _password_token(keycloak_url, "admin", "admin")
+
+
+@pytest.fixture(scope="session")
+async def operator_token(keycloak_url: str) -> str:
+    return await _password_token(keycloak_url, "operator", "operator")
+
+
+@pytest.fixture(scope="session")
+async def viewer_token(keycloak_url: str) -> str:
+    return await _password_token(keycloak_url, "viewer", "viewer")
 
 
 @pytest.fixture

@@ -1,4 +1,4 @@
-# AgentGateway v1.2.1 — HTTP reverse proxy + JWT validation
+# AgentGateway v1.2.1 — HTTP reverse proxy + JWT validation + CEL RBAC
 # Docs: https://agentgateway.dev
 
 binds:
@@ -25,6 +25,12 @@ binds:
           issuer: "http://localhost:8443/realms/spine"
           jwks:
             url: "http://keycloak:8443/realms/spine/protocol/openid-connect/certs"
+      authorization:
+        rules:
+        - require: 'has(jwt.realm_access) && size(jwt.realm_access.roles) > 0'
+        - allow: '"admin" in jwt.realm_access.roles'
+        - allow: '"operator" in jwt.realm_access.roles && request.method != "DELETE"'
+        - allow: '"viewer" in jwt.realm_access.roles && (request.method == "GET" || request.method == "HEAD")'
       backends:
       - host: registry:8081
 
@@ -38,6 +44,12 @@ binds:
           issuer: "http://localhost:8443/realms/spine"
           jwks:
             url: "http://keycloak:8443/realms/spine/protocol/openid-connect/certs"
+      authorization:
+        rules:
+        - require: 'has(jwt.realm_access) && size(jwt.realm_access.roles) > 0'
+        - allow: '"admin" in jwt.realm_access.roles'
+        - allow: '"operator" in jwt.realm_access.roles && request.method != "DELETE"'
+        - allow: '"viewer" in jwt.realm_access.roles && (request.method == "GET" || request.method == "HEAD")'
       backends:
       - host: catalog:8082
 
@@ -51,6 +63,10 @@ binds:
           issuer: "http://localhost:8443/realms/spine"
           jwks:
             url: "http://keycloak:8443/realms/spine/protocol/openid-connect/certs"
+      authorization:
+        rules:
+        - require: 'has(jwt.realm_access) && size(jwt.realm_access.roles) > 0'
+        - allow: '"admin" in jwt.realm_access.roles || "operator" in jwt.realm_access.roles || "viewer" in jwt.realm_access.roles'
       backends:
       - host: chat:8084
 
@@ -64,6 +80,12 @@ binds:
           issuer: "http://localhost:8443/realms/spine"
           jwks:
             url: "http://keycloak:8443/realms/spine/protocol/openid-connect/certs"
+      authorization:
+        rules:
+        - require: 'has(jwt.realm_access) && size(jwt.realm_access.roles) > 0'
+        - allow: '"admin" in jwt.realm_access.roles'
+        - allow: '"operator" in jwt.realm_access.roles'
+        - allow: '"viewer" in jwt.realm_access.roles && request.method != "DELETE"'
       backends:
       - host: chat:8084
 
@@ -79,6 +101,10 @@ binds:
           issuer: "http://localhost:8443/realms/spine"
           jwks:
             url: "http://keycloak:8443/realms/spine/protocol/openid-connect/certs"
+      authorization:
+        rules:
+        - require: 'has(jwt.realm_access) && size(jwt.realm_access.roles) > 0'
+        - allow: '"admin" in jwt.realm_access.roles || "operator" in jwt.realm_access.roles || "viewer" in jwt.realm_access.roles'
       backends:
       - host: observer:8083
 
@@ -92,5 +118,9 @@ binds:
           issuer: "http://localhost:8443/realms/spine"
           jwks:
             url: "http://keycloak:8443/realms/spine/protocol/openid-connect/certs"
+      authorization:
+        rules:
+        - require: 'has(jwt.realm_access) && size(jwt.realm_access.roles) > 0'
+        - allow: '"admin" in jwt.realm_access.roles || "operator" in jwt.realm_access.roles || "viewer" in jwt.realm_access.roles'
       backends:
       - host: host.docker.internal:11434

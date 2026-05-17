@@ -62,12 +62,12 @@ RBAC_CASES: list[tuple[str, str, str, str | None, int]] = [
         "operator_token",
         404,
     ),
-    # --- chat (all roles) ---
-    ("viewer access chat", "GET", "/v1/chat/", "viewer_token", 404),
-    ("operator access chat", "GET", "/v1/chat/", "operator_token", 404),
-    # --- observer (all roles) ---
-    ("viewer GET events", "GET", "/v1/events/", "viewer_token", 200),
-    ("viewer GET traces", "GET", "/v1/traces/", "viewer_token", 200),
+    # --- chat (all roles) — GET on POST-only root returns 405, proving authz passed ---
+    ("viewer access chat", "GET", "/v1/chat", "viewer_token", 405),
+    ("operator access chat", "GET", "/v1/chat", "operator_token", 405),
+    # --- observer (all roles) — GET on POST-only endpoints returns 405, proving authz passed ---
+    ("viewer GET events", "GET", "/v1/events", "viewer_token", 405),
+    ("viewer GET traces", "GET", "/v1/traces", "viewer_token", 405),
     # --- no token ---
     ("no token GET agents", "GET", "/v1/agents/", None, 401),
 ]

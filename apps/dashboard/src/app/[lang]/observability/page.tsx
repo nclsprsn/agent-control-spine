@@ -1,14 +1,28 @@
 export const dynamic = "force-dynamic";
 
+import { notFound } from "next/navigation";
 import { promQuery } from "@/lib/prom";
 import { DashboardCard } from "@/components/DashboardCard";
+import { getDictionary } from "../dictionaries";
+import { locales } from "@/middleware";
+import type { Locale } from "@/middleware";
 
 function fmt(value: number | null, decimals = 2): string {
   if (value === null) return "—";
   return value.toFixed(decimals);
 }
 
-export default async function ObservabilityPage() {
+export default async function ObservabilityPage({
+  params,
+}: {
+  params: Promise<{ lang: string }>;
+}) {
+  const { lang } = await params;
+  if (!locales.includes(lang as Locale)) notFound();
+
+  const dict = await getDictionary(lang as Locale);
+  const t = dict.observability;
+
   const [reqPerSec, errorPct, p95LatencyMs, inFlight, perServiceRaw] =
     await Promise.all([
       promQuery("sum(rate(http_requests_total[5m]))"),
@@ -26,7 +40,9 @@ export default async function ObservabilityPage() {
         .then((r) => (r.ok ? r.json() : null))
         .catch(() => null) as Promise<{
         status: string;
-        data: { result: { metric: { job: string }; value: [number, string] }[] };
+        data: {
+          result: { metric: { job: string }; value: [number, string] }[];
+        };
       } | null>,
     ]);
 
@@ -40,31 +56,31 @@ export default async function ObservabilityPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Observability</h1>
+      <h1 className="text-2xl font-bold mb-6">{t.title}</h1>
 
       <div className="space-y-8">
         <div>
-          <h2 className="text-lg font-semibold mb-4">Service Metrics</h2>
+          <h2 className="text-lg font-semibold mb-4">{t.serviceMetrics}</h2>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
             <DashboardCard
-              title="Requests / sec"
+              title={t.tiles.requestsPerSec.title}
               value={fmt(reqPerSec, 2)}
-              description="All services, 5m avg"
+              description={t.tiles.requestsPerSec.description}
             />
             <DashboardCard
-              title="Error rate"
+              title={t.tiles.errorRate.title}
               value={`${fmt(errorPct, 1)}%`}
-              description="5xx responses, 5m avg"
+              description={t.tiles.errorRate.description}
             />
             <DashboardCard
-              title="p95 latency"
+              title={t.tiles.p95Latency.title}
               value={`${fmt(p95LatencyMs, 0)}ms`}
-              description="Response time, 5m window"
+              description={t.tiles.p95Latency.description}
             />
             <DashboardCard
-              title="In-flight"
+              title={t.tiles.inFlight.title}
               value={fmt(inFlight, 0)}
-              description="Active requests right now"
+              description={t.tiles.inFlight.description}
             />
           </div>
 
@@ -74,10 +90,10 @@ export default async function ObservabilityPage() {
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="text-left px-4 py-3 font-medium">
-                      Service
+                      {t.columns.service}
                     </th>
                     <th className="text-left px-4 py-3 font-medium">
-                      Req / sec (5m)
+                      {t.columns.reqPerSec}
                     </th>
                   </tr>
                 </thead>
@@ -98,36 +114,30 @@ export default async function ObservabilityPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div>
-            <h2 className="text-lg font-semibold mb-4">LLM Traces (Langfuse)</h2>
+            <h2 className="text-lg font-semibold mb-4">{t.langfuse.title}</h2>
             <div className="border border-gray-200 rounded-lg p-6">
-              <p className="text-gray-400 text-sm mb-3">
-                LLM call traces, token usage, latency, and evaluation scores.
-              </p>
+              <p className="text-gray-400 text-sm mb-3">{t.langfuse.description}</p>
               <a
                 href="http://localhost:3003"
                 className="inline-block px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                Open Langfuse
+                {t.langfuse.button}
               </a>
             </div>
           </div>
           <div>
-            <h2 className="text-lg font-semibold mb-4">
-              Infrastructure Traces
-            </h2>
+            <h2 className="text-lg font-semibold mb-4">{t.grafana.title}</h2>
             <div className="border border-gray-200 rounded-lg p-6">
-              <p className="text-gray-400 text-sm mb-3">
-                Service-level traces, logs, and metrics via OpenTelemetry.
-              </p>
+              <p className="text-gray-400 text-sm mb-3">{t.grafana.description}</p>
               <a
                 href="http://localhost:3000"
                 className="inline-block px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                Open Grafana
+                {t.grafana.button}
               </a>
             </div>
           </div>

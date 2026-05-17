@@ -1,0 +1,125 @@
+{
+  "metadata": {
+    "title": "Agent Control Spine — Tableau de bord",
+    "description": "Panneau de contrôle entreprise pour agents IA"
+  },
+  "sidebar": {
+    "appName": "Agent Control Spine",
+    "appSubtitle": "Panneau de contrôle entreprise",
+    "nav": {
+      "dashboard": "Tableau de bord",
+      "agents": "Agents",
+      "catalog": "Catalogue",
+      "observability": "Observabilité",
+      "gateway": "Passerelle"
+    }
+  },
+  "home": {
+    "title": "Tableau de bord",
+    "agents": { "title": "Agents", "description": "Agents enregistrés" },
+    "capabilities": {
+      "title": "Capacités",
+      "description": "Capacités disponibles"
+    },
+    "tools": { "title": "Outils", "description": "Outils enregistrés" },
+    "conversations": {
+      "title": "Conversations",
+      "description": "Conversations actives"
+    }
+  },
+  "agents": {
+    "title": "Agents",
+    "columns": {
+      "name": "Nom",
+      "version": "Version",
+      "status": "Statut",
+      "owner": "Propriétaire",
+      "description": "Description"
+    },
+    "empty": "Aucun agent enregistré.",
+    "totalSingular": "{{count}} agent au total",
+    "totalPlural": "{{count}} agents au total"
+  },
+  "agentDetail": {
+    "backToAgents": "Retour aux agents",
+    "notFound": "Agent introuvable.",
+    "fields": {
+      "status": "Statut",
+      "version": "Version",
+      "owner": "Propriétaire",
+      "created": "Créé le",
+      "endpoint": "Point de terminaison",
+      "description": "Description"
+    },
+    "metadata": "Métadonnées"
+  },
+  "catalog": {
+    "title": "Catalogue",
+    "capabilities": "Capacités",
+    "tools": "Outils",
+    "noCapabilities": "Aucune capacité enregistrée.",
+    "noTools": "Aucun outil enregistré.",
+    "provider": "Fournisseur"
+  },
+  "gateway": {
+    "title": "Configuration de la passerelle",
+    "agentgateway": "AgentGateway",
+    "fields": {
+      "endpoint": "Point de terminaison",
+      "authMode": "Mode d'authentification",
+      "authModeValue": "JWT strict (Keycloak RS256)",
+      "policyEngine": "Moteur de politique",
+      "policyEngineValue": "CEL",
+      "protocol": "Protocole",
+      "protocolValue": "HTTP + MCP + A2A"
+    },
+    "upstreamHealth": "Santé des services",
+    "columns": {
+      "service": "Service",
+      "status": "Statut",
+      "latency": "Latence",
+      "routes": "Routes de la passerelle"
+    },
+    "status": {
+      "ready": "opérationnel",
+      "degraded": "dégradé",
+      "down": "hors ligne"
+    }
+  },
+  "observability": {
+    "title": "Observabilité",
+    "serviceMetrics": "Métriques des services",
+    "tiles": {
+      "requestsPerSec": {
+        "title": "Requêtes / sec",
+        "description": "Tous les services, moy. 5m"
+      },
+      "errorRate": {
+        "title": "Taux d'erreur",
+        "description": "Réponses 5xx, moy. 5m"
+      },
+      "p95Latency": {
+        "title": "Latence p95",
+        "description": "Temps de réponse, fenêtre 5m"
+      },
+      "inFlight": {
+        "title": "En cours",
+        "description": "Requêtes actives en ce moment"
+      }
+    },
+    "columns": {
+      "service": "Service",
+      "reqPerSec": "Req / sec (5m)"
+    },
+    "langfuse": {
+      "title": "Traces LLM (Langfuse)",
+      "description": "Traces des appels LLM, usage des tokens, latence et scores d'évaluation.",
+      "button": "Ouvrir Langfuse"
+    },
+    "grafana": {
+      "title": "Traces d'infrastructure",
+      "description": "Traces, journaux et métriques des services via OpenTelemetry.",
+      "button": "Ouvrir Grafana"
+    }
+  }
+}

@@ -1,10 +1,24 @@
 export const dynamic = "force-dynamic";
 
+import { notFound } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 import { DashboardCard } from "@/components/DashboardCard";
+import { getDictionary } from "./dictionaries";
+import { locales } from "@/middleware";
+import type { Locale } from "@/middleware";
 import type { Agent, Capability, Tool, PaginatedResponse } from "@/lib/types";
 
-export default async function DashboardHome() {
+export default async function DashboardHome({
+  params,
+}: {
+  params: Promise<{ lang: string }>;
+}) {
+  const { lang } = await params;
+  if (!locales.includes(lang as Locale)) notFound();
+
+  const dict = await getDictionary(lang as Locale);
+  const t = dict.home;
+
   const [agents, capabilities, tools, conversations] = await Promise.all([
     apiFetch<PaginatedResponse<Agent>>("/v1/agents/?page_size=1").catch(
       () => null
@@ -22,27 +36,27 @@ export default async function DashboardHome() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
+      <h1 className="text-2xl font-bold mb-6">{t.title}</h1>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <DashboardCard
-          title="Agents"
+          title={t.agents.title}
           value={agents ? String(agents.total) : "—"}
-          description="Registered agents"
+          description={t.agents.description}
         />
         <DashboardCard
-          title="Capabilities"
+          title={t.capabilities.title}
           value={capabilities ? String(capabilities.total) : "—"}
-          description="Available capabilities"
+          description={t.capabilities.description}
         />
         <DashboardCard
-          title="Tools"
+          title={t.tools.title}
           value={tools ? String(tools.total) : "—"}
-          description="Registered tools"
+          description={t.tools.description}
         />
         <DashboardCard
-          title="Conversations"
-          value={conversations ? String(conversations.total) : "—"}
-          description="Active conversations"
+          title={t.conversations.title}
+          value={conversations ? String((conversations as PaginatedResponse<unknown>).total) : "—"}
+          description={t.conversations.description}
         />
       </div>
     </div>

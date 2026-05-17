@@ -14,6 +14,7 @@ type SidebarDict = {
     observability: string;
     gateway: string;
   };
+  signOut: string;
 };
 
 const NAV_ITEMS = [
@@ -27,9 +28,13 @@ const NAV_ITEMS = [
 export function Sidebar({
   locale,
   t,
+  userName,
+  signOutAction,
 }: {
   locale: Locale;
   t: SidebarDict;
+  userName: string | null;
+  signOutAction: () => Promise<void>;
 }) {
   const pathname = usePathname();
 
@@ -63,8 +68,18 @@ export function Sidebar({
           );
         })}
       </nav>
-      <div className="p-4 border-t border-gray-800 text-xs text-gray-600">
-        v0.1.0
+      <div className="p-4 border-t border-gray-800 space-y-2">
+        {userName && (
+          <p className="text-xs text-gray-400 truncate">{userName}</p>
+        )}
+        <form action={signOutAction}>
+          <button
+            type="submit"
+            className="w-full text-left text-xs text-gray-500 hover:text-gray-300 transition-colors"
+          >
+            {t.signOut}
+          </button>
+        </form>
       </div>
     </aside>
   );

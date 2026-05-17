@@ -19,6 +19,25 @@ Agent Control Spine is an enterprise control plane for AI agents, providing gate
 - Realm: `spine`
 - Clients: `spine-dashboard`, `spine-chat`, `spine-services`
 - Roles: `admin`, `operator`, `viewer`
+- Seeded users: `admin/admin`, `operator/operator`, `viewer/viewer`
+
+### RBAC Policy Matrix
+
+CEL policies enforced at AgentGateway. JWT claim: `realm_access.roles`.
+
+| Resource | viewer | operator | admin |
+|----------|--------|----------|-------|
+| `/v1/agents` GET | ✅ | ✅ | ✅ |
+| `/v1/agents` POST, PATCH | ❌ | ✅ | ✅ |
+| `/v1/agents` DELETE | ❌ | ❌ | ✅ |
+| `/v1/catalog` GET | ✅ | ✅ | ✅ |
+| `/v1/catalog` POST, PATCH | ❌ | ✅ | ✅ |
+| `/v1/catalog` DELETE | ❌ | ❌ | ✅ |
+| `/v1/conversations` GET, POST | ✅ | ✅ | ✅ |
+| `/v1/conversations` DELETE | ❌ | ✅ | ✅ |
+| `/v1/chat` | ✅ | ✅ | ✅ |
+| `/v1/events`, `/v1/traces` | ✅ | ✅ | ✅ |
+| `/ollama` | ✅ | ✅ | ✅ |
 
 ### Registry Service
 - Agent CRUD and lifecycle management

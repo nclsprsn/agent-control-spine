@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Sidebar } from "@/components/layout/sidebar";
 import { getDictionary } from "./dictionaries";
-import { locales } from "@/middleware";
-import type { Locale } from "@/middleware";
+import { locales } from "@/proxy";
+import type { Locale } from "@/proxy";
 
 export async function generateMetadata({
   params,

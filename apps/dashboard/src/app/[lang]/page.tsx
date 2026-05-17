@@ -4,8 +4,8 @@ import { notFound } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 import { DashboardCard } from "@/components/DashboardCard";
 import { getDictionary } from "./dictionaries";
-import { locales } from "@/middleware";
-import type { Locale } from "@/middleware";
+import { locales } from "@/proxy";
+import type { Locale } from "@/proxy";
 import type { Agent, Capability, Tool, PaginatedResponse } from "@/lib/types";
 
 export default async function DashboardHome({

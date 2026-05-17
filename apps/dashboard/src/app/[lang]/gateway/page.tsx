@@ -2,8 +2,8 @@ export const dynamic = "force-dynamic";
 
 import { notFound } from "next/navigation";
 import { getDictionary } from "../dictionaries";
-import { locales } from "@/middleware";
-import type { Locale } from "@/middleware";
+import { locales } from "@/proxy";
+import type { Locale } from "@/proxy";
 
 const SERVICES = [
   {

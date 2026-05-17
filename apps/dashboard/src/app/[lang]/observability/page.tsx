@@ -4,8 +4,8 @@ import { notFound } from "next/navigation";
 import { promQuery } from "@/lib/prom";
 import { DashboardCard } from "@/components/DashboardCard";
 import { getDictionary } from "../dictionaries";
-import { locales } from "@/middleware";
-import type { Locale } from "@/middleware";
+import { locales } from "@/proxy";
+import type { Locale } from "@/proxy";
 
 function fmt(value: number | null, decimals = 2): string {
   if (value === null) return "—";

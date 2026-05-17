@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { Locale } from "@/middleware";
+import type { Locale } from "@/proxy";
 
 type SidebarDict = {
   appName: string;

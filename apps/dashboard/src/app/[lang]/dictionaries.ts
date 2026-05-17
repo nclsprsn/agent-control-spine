@@ -1,5 +1,5 @@
 import "server-only";
-import type { Locale } from "@/middleware";
+import type { Locale } from "@/proxy";
 
 const dictionaries = {
   en: () =>

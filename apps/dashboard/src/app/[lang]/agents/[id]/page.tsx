@@ -4,8 +4,8 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { apiFetch } from "@/lib/api";
 import { getDictionary } from "../../dictionaries";
-import { locales } from "@/middleware";
-import type { Locale } from "@/middleware";
+import { locales } from "@/proxy";
+import type { Locale } from "@/proxy";
 import type { Agent } from "@/lib/types";
 
 export default async function AgentDetailPage({

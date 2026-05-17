@@ -5,6 +5,7 @@ def _get_rfp_agent():
     """Import rfp_agent, skip test if unavailable (missing Ollama/OpenAI config)."""
     try:
         from agents.rfp import rfp_agent
+
         return rfp_agent
     except Exception as e:
         pytest.skip(f"Cannot import rfp_agent: {e}")

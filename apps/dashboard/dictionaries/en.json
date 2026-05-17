@@ -1,0 +1,125 @@
+{
+  "metadata": {
+    "title": "Agent Control Spine — Dashboard",
+    "description": "Enterprise control plane for AI agents"
+  },
+  "sidebar": {
+    "appName": "Agent Control Spine",
+    "appSubtitle": "Enterprise Control Plane",
+    "nav": {
+      "dashboard": "Dashboard",
+      "agents": "Agents",
+      "catalog": "Catalog",
+      "observability": "Observability",
+      "gateway": "Gateway"
+    }
+  },
+  "home": {
+    "title": "Dashboard",
+    "agents": { "title": "Agents", "description": "Registered agents" },
+    "capabilities": {
+      "title": "Capabilities",
+      "description": "Available capabilities"
+    },
+    "tools": { "title": "Tools", "description": "Registered tools" },
+    "conversations": {
+      "title": "Conversations",
+      "description": "Active conversations"
+    }
+  },
+  "agents": {
+    "title": "Agents",
+    "columns": {
+      "name": "Name",
+      "version": "Version",
+      "status": "Status",
+      "owner": "Owner",
+      "description": "Description"
+    },
+    "empty": "No agents registered yet.",
+    "totalSingular": "{{count}} agent total",
+    "totalPlural": "{{count}} agents total"
+  },
+  "agentDetail": {
+    "backToAgents": "Back to agents",
+    "notFound": "Agent not found.",
+    "fields": {
+      "status": "Status",
+      "version": "Version",
+      "owner": "Owner",
+      "created": "Created",
+      "endpoint": "Endpoint",
+      "description": "Description"
+    },
+    "metadata": "Metadata"
+  },
+  "catalog": {
+    "title": "Catalog",
+    "capabilities": "Capabilities",
+    "tools": "Tools",
+    "noCapabilities": "No capabilities registered yet.",
+    "noTools": "No tools registered yet.",
+    "provider": "Provider"
+  },
+  "gateway": {
+    "title": "Gateway Configuration",
+    "agentgateway": "AgentGateway",
+    "fields": {
+      "endpoint": "Endpoint",
+      "authMode": "Auth Mode",
+      "authModeValue": "JWT strict (Keycloak RS256)",
+      "policyEngine": "Policy Engine",
+      "policyEngineValue": "CEL",
+      "protocol": "Protocol",
+      "protocolValue": "HTTP + MCP + A2A"
+    },
+    "upstreamHealth": "Upstream Health",
+    "columns": {
+      "service": "Service",
+      "status": "Status",
+      "latency": "Latency",
+      "routes": "Gateway Routes"
+    },
+    "status": {
+      "ready": "ready",
+      "degraded": "degraded",
+      "down": "down"
+    }
+  },
+  "observability": {
+    "title": "Observability",
+    "serviceMetrics": "Service Metrics",
+    "tiles": {
+      "requestsPerSec": {
+        "title": "Requests / sec",
+        "description": "All services, 5m avg"
+      },
+      "errorRate": {
+        "title": "Error rate",
+        "description": "5xx responses, 5m avg"
+      },
+      "p95Latency": {
+        "title": "p95 latency",
+        "description": "Response time, 5m window"
+      },
+      "inFlight": {
+        "title": "In-flight",
+        "description": "Active requests right now"
+      }
+    },
+    "columns": {
+      "service": "Service",
+      "reqPerSec": "Req / sec (5m)"
+    },
+    "langfuse": {
+      "title": "LLM Traces (Langfuse)",
+      "description": "LLM call traces, token usage, latency, and evaluation scores.",
+      "button": "Open Langfuse"
+    },
+    "grafana": {
+      "title": "Infrastructure Traces",
+      "description": "Service-level traces, logs, and metrics via OpenTelemetry.",
+      "button": "Open Grafana"
+    }
+  }
+}

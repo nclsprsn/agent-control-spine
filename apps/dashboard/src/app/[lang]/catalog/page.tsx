@@ -1,28 +1,40 @@
 export const dynamic = "force-dynamic";
 
+import { notFound } from "next/navigation";
 import { apiFetch } from "@/lib/api";
+import { getDictionary } from "../dictionaries";
+import { locales } from "@/proxy";
+import type { Locale } from "@/proxy";
 import type { Capability, Tool, PaginatedResponse } from "@/lib/types";
 
-export default async function CatalogPage() {
+export default async function CatalogPage({
+  params,
+}: {
+  params: Promise<{ lang: string }>;
+}) {
+  const { lang } = await params;
+  if (!locales.includes(lang as Locale)) notFound();
+
+  const dict = await getDictionary(lang as Locale);
+  const t = dict.catalog;
+
   const [capabilities, tools] = await Promise.all([
-    apiFetch<PaginatedResponse<Capability>>(
-      "/v1/catalog/capabilities"
-    ).catch(() => null),
+    apiFetch<PaginatedResponse<Capability>>("/v1/catalog/capabilities").catch(
+      () => null
+    ),
     apiFetch<PaginatedResponse<Tool>>("/v1/catalog/tools").catch(() => null),
   ]);
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Catalog</h1>
+      <h1 className="text-2xl font-bold mb-6">{t.title}</h1>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div>
           <h2 className="text-lg font-semibold mb-4">
-            Capabilities ({capabilities?.total ?? 0})
+            {t.capabilities} ({capabilities?.total ?? 0})
           </h2>
           {!capabilities || capabilities.items.length === 0 ? (
-            <p className="text-gray-400 text-sm">
-              No capabilities registered yet.
-            </p>
+            <p className="text-gray-400 text-sm">{t.noCapabilities}</p>
           ) : (
             <div className="space-y-3">
               {capabilities.items.map((cap) => (
@@ -55,10 +67,10 @@ export default async function CatalogPage() {
         </div>
         <div>
           <h2 className="text-lg font-semibold mb-4">
-            Tools ({tools?.total ?? 0})
+            {t.tools} ({tools?.total ?? 0})
           </h2>
           {!tools || tools.items.length === 0 ? (
-            <p className="text-gray-400 text-sm">No tools registered yet.</p>
+            <p className="text-gray-400 text-sm">{t.noTools}</p>
           ) : (
             <div className="space-y-3">
               {tools.items.map((tool) => (
@@ -75,7 +87,7 @@ export default async function CatalogPage() {
                   <div className="flex items-center gap-2 mt-2">
                     {tool.provider && (
                       <span className="text-xs text-gray-400">
-                        Provider: {tool.provider}
+                        {t.provider}: {tool.provider}
                       </span>
                     )}
                     {tool.tags.map((tag) => (

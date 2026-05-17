@@ -1,27 +1,24 @@
 export const dynamic = "force-dynamic";
 
+import { notFound } from "next/navigation";
 import { apiFetch } from "@/lib/api";
+import { DashboardCard } from "@/components/DashboardCard";
+import { getDictionary } from "./dictionaries";
+import { locales } from "@/proxy";
+import type { Locale } from "@/proxy";
 import type { Agent, Capability, Tool, PaginatedResponse } from "@/lib/types";
 
-function DashboardCard({
-  title,
-  value,
-  description,
+export default async function DashboardHome({
+  params,
 }: {
-  title: string;
-  value: string;
-  description: string;
+  params: Promise<{ lang: string }>;
 }) {
-  return (
-    <div className="border border-gray-200 rounded-lg p-6">
-      <p className="text-sm text-gray-500">{title}</p>
-      <p className="text-3xl font-bold mt-1">{value}</p>
-      <p className="text-xs text-gray-400 mt-1">{description}</p>
-    </div>
-  );
-}
+  const { lang } = await params;
+  if (!locales.includes(lang as Locale)) notFound();
 
-export default async function DashboardHome() {
+  const dict = await getDictionary(lang as Locale);
+  const t = dict.home;
+
   const [agents, capabilities, tools, conversations] = await Promise.all([
     apiFetch<PaginatedResponse<Agent>>("/v1/agents/?page_size=1").catch(
       () => null
@@ -39,27 +36,27 @@ export default async function DashboardHome() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
+      <h1 className="text-2xl font-bold mb-6">{t.title}</h1>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <DashboardCard
-          title="Agents"
+          title={t.agents.title}
           value={agents ? String(agents.total) : "—"}
-          description="Registered agents"
+          description={t.agents.description}
         />
         <DashboardCard
-          title="Capabilities"
+          title={t.capabilities.title}
           value={capabilities ? String(capabilities.total) : "—"}
-          description="Available capabilities"
+          description={t.capabilities.description}
         />
         <DashboardCard
-          title="Tools"
+          title={t.tools.title}
           value={tools ? String(tools.total) : "—"}
-          description="Registered tools"
+          description={t.tools.description}
         />
         <DashboardCard
-          title="Conversations"
-          value={conversations ? String(conversations.total) : "—"}
-          description="Active conversations"
+          title={t.conversations.title}
+          value={conversations ? String((conversations as PaginatedResponse<unknown>).total) : "—"}
+          description={t.conversations.description}
         />
       </div>
     </div>

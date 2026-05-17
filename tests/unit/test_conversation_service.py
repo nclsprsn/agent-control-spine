@@ -51,7 +51,8 @@ async def test_delete_succeeds_for_owner(db_session):
     conv = await svc.create(user_id="alice", agent_id=uuid.uuid4())
     await db_session.commit()
 
-    assert await svc.delete(conv.id, user_id="alice") is True
+    deleted = await svc.delete(conv.id, user_id="alice")
+    assert deleted is True
     await db_session.commit()
     assert await svc.get(conv.id) is None
 
@@ -59,7 +60,8 @@ async def test_delete_succeeds_for_owner(db_session):
 @pytest.mark.asyncio
 async def test_delete_returns_false_for_missing_id(db_session):
     svc = ConversationService(db_session)
-    assert await svc.delete(uuid.uuid4(), user_id="alice") is False
+    result = await svc.delete(uuid.uuid4(), user_id="alice")
+    assert result is False
 
 
 @pytest.mark.asyncio

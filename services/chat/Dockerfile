@@ -6,6 +6,7 @@ COPY services/chat ./services/chat
 RUN uv sync --frozen --no-dev --no-editable --package chat
 
 FROM python:3.14-slim-bookworm
+RUN apt-get update && apt-get upgrade -y --no-install-recommends && rm -rf /var/lib/apt/lists/*
 RUN useradd -u 1000 -m -s /usr/sbin/nologin app
 WORKDIR /app
 COPY --from=builder --chown=app:app /app/.venv /app/.venv

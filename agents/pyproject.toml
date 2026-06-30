@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Pydantic AI agent definitions for Agent Control Spine"
 requires-python = ">=3.14"
 dependencies = [
-    "pydantic-ai>=1.0",
+    "pydantic-ai>=1.102.0",
     "spine-common",
 ]
 

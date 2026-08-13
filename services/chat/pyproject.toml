@@ -5,7 +5,7 @@ description = "Chat orchestration service for Agent Control Spine"
 requires-python = ">=3.14"
 dependencies = [
     "spine-common",
-    "pydantic-ai>=1.0",
+    "pydantic-ai>=1.106.0",
     "redis[hiredis]>=5.0",
     "sse-starlette>=2.2",
     "alembic>=1.15",
